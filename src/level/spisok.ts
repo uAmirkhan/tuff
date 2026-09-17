@@ -7,6 +7,7 @@ import { UROVEN_1_4 } from './urovni/1-4';
 import { UROVEN_1_5 } from './urovni/1-5';
 import { UROVEN_1_6 } from './urovni/1-6';
 import { UROVEN_1_7 } from './urovni/1-7';
+import { UROVEN_K1_1 } from './urovni/k1-1';
 import { UROVEN_PROBA } from './urovni/proba-elementov';
 import { UROVEN_ZH_1 } from './urovni/zherlo-1';
 
@@ -22,7 +23,7 @@ export const UROVNI: Uroven[] = [
 ];
 
 // Испытательные уровни: не в кампании, открываются по ?uroven=<id>
-export const ISPYTATELNYE: Uroven[] = [UROVEN_PROBA];
+export const ISPYTATELNYE: Uroven[] = [UROVEN_PROBA, UROVEN_K1_1]; // k1-1: черновик яруса 1, в кампанию после сборки яруса
 
 export function urovenPoId(id: string): Uroven | undefined {
   return UROVNI.find((u) => u.id === id) ?? ISPYTATELNYE.find((u) => u.id === id);

@@ -13,6 +13,10 @@ export interface ProgressUrovnya {
 export interface Progress {
   versiya: 1;
   urovni: Record<string, ProgressUrovnya>;
+  paneli: number[]; // найденные панели строителей (Журнал)
+  uzly: string[]; // зажжённые узлы теплотрассы по id уровня
+  ruda: number; // жар-руда в кармане
+  rudaNaydena: string[]; // клады «уровень:id», чтобы не считать дважды
   nastroyki: { pomoshchnik: boolean; raskladka: 'wasd' | 'strelki'; zvuk: boolean };
 }
 
@@ -24,6 +28,10 @@ export interface Hranilishche {
 export const PUSTOY_PROGRESS = (): Progress => ({
   versiya: 1,
   urovni: {},
+  paneli: [],
+  uzly: [],
+  ruda: 0,
+  rudaNaydena: [],
   nastroyki: { pomoshchnik: false, raskladka: 'wasd', zvuk: true },
 });
 

@@ -36,6 +36,10 @@ export interface Sushchnost {
   silaX: number;
   silaY: number;
   os: number;
+  vid: string;
+  nadpis: string;
+  nomer: number;
+  zaryad: number; // узел: такты Вязкости у горна; бак: такты вспышки
   poRaspisaniyu: boolean; // у зоны задан период: включена первую половину цикла
   vklyuchenaVRaspisanii: boolean; // зона по расписанию: исходное состояние aktivna без учёта цикла
 }
@@ -222,6 +226,10 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       silaX: o.silaX ?? 0,
       silaY: o.silaY ?? 0,
       os: o.os ?? 0.5,
+      vid: o.vid ?? '',
+      nadpis: o.nadpis ?? '',
+      nomer: o.nomer ?? 0,
+      zaryad: 0,
       poRaspisaniyu: o.period !== undefined,
       vklyuchenaVRaspisanii: !(o.vyklyuchena ?? false),
     };

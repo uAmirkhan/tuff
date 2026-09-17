@@ -69,6 +69,8 @@ const PRYAMOUGOLNYE: TipObekta[] = [
   'konveyer',
   'yashchik',
   'potok',
+  'okno',
+  'panorama',
 ];
 // Поля Obekt, которые переносятся свойствами как есть
 const POLYA_OBEKTA = [
@@ -93,9 +95,12 @@ const POLYA_OBEKTA = [
   'silaX',
   'silaY',
   'os',
+  'vid',
+  'nadpis',
+  'nomer',
 ] as const;
 // точечные объекты с размерами в свойствах (маятник: якорь точкой, контейнер размерами)
-const RAZMERY_V_SVOYSTVAH: TipObekta[] = ['mayatnik', 'koromyslo'];
+const RAZMERY_V_SVOYSTVAH: TipObekta[] = ['mayatnik', 'koromyslo', 'bak'];
 const POLYA_UROVNYA = [
   'id',
   'nazvanie',

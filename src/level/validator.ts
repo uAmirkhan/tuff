@@ -15,6 +15,8 @@ export function proveritUroven(u: Uroven): string[] {
     if (o.id) ids.set(o.id, (ids.get(o.id) ?? 0) + 1);
   }
   for (const [id, n] of ids) if (n > 1) oshibki.push(`повторяется id ${id}`);
+  const uzly = u.obekty.filter((o) => o.tip === 'uzel').length;
+  if (uzly > 1) oshibki.push(`узлов теплотрассы ${uzly}, не больше одного на уровень`);
   for (const o of u.obekty) {
     if ((o.tip === 'plita' || o.tip === 'rychag') && (!o.cel || !ids.has(o.cel)))
       oshibki.push(`${o.tip} ${o.id ?? '?'} без цели или цель не найдена`);
@@ -30,6 +32,14 @@ export function proveritUroven(u: Uroven): string[] {
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
     if (o.tip === 'potok' && (!o.w || !o.h)) oshibki.push(`поток ${o.id ?? '?'} без размеров`);
     if (o.tip === 'potok' && !o.silaX && !o.silaY) oshibki.push(`поток ${o.id ?? '?'} без силы`);
+    if ((o.tip === 'okno' || o.tip === 'panorama') && (!o.w || !o.h))
+      oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
+    if (o.tip === 'panel' && !(o.nomer && o.nomer >= 1 && o.nomer <= 15))
+      oshibki.push(`панель ${o.id ?? '?'} без номера 1..15`);
+    if (o.tip === 'shema' && !['vyazkost', 'rasplav', 'korka', 'vybros'].includes(o.vid ?? ''))
+      oshibki.push(`схема ${o.id ?? '?'} без вида способности`);
+    if (o.tip === 'okno' && !['stvol', 'budushchee'].includes(o.vid ?? ''))
+      oshibki.push(`окно ${o.id ?? '?'} без вида (stvol, budushchee)`);
     if (o.tip === 'koromyslo' && (!o.w || !o.h))
       oshibki.push(`коромысло ${o.id ?? '?'} без размеров`);
     if (
