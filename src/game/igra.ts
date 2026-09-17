@@ -211,11 +211,16 @@ export class Igra {
       if (g.maxX > s.x && g.minX < s.x + s.w && g.maxY > s.y && g.minY < s.y + s.h) {
         if (s.tip === 'lava') vLave = true;
         else if (s.tip === 'ship') vShipah = true;
-        else if (s.tip === 'iney') vInee = true;
-        else vVode = true;
-      }
+        else if (s.tip === 'iney') {
+          // иней: камера (zaderzhka 0) надевает Корку сразу; иней на стене считает время хватки:
+          // копится только в Вязкости, без неё спадает вдвое быстрее, вне зоны обнуляется
+          if (s.zaderzhka === 0 || nam.vyazkost) s.zaryad++;
+          else s.zaryad = Math.max(0, s.zaryad - 2);
+          if (s.zaryad >= s.zaderzhka * 60) vInee = true;
+        } else vVode = true;
+      } else if (s.tip === 'iney') s.zaryad = 0;
     }
-    // иней-камера: Корка надевается сама и спадает через секунду после выхода, урона нет
+    // Корка от инея спадает через секунду после выхода, урона нет
     if (vInee) this.korkaDo = Math.max(this.korkaDo, this.takty + 60);
     if (vLave) {
       this.zhar = Math.min(ZHAR.maks, this.zhar + ZHAR.lechenieLavy);
