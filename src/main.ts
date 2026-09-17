@@ -19,6 +19,12 @@ mir.dobavitOtrezok(-6.6, 0, -6.6, 1.2, 1, 1, 0); // второй столбик:
 mir.dobavitOtrezok(-3, 3.5, 0, 3.5, 0.05, 0, 0); // скользкая плита, Вязкость не держит
 
 const telo = new Telo(mir, 0, 1.5);
+// Режим замера: ?perf=1 добавляет тела до ~400 точек, как в бюджете дней 6-7
+const perf = new URLSearchParams(location.search).get('perf') === '1';
+const statisty: Telo[] = [];
+if (perf)
+  for (let i = 0; i < 24; i++) statisty.push(new Telo(mir, -8 + i * 0.7, 3 + (i % 4) * 1.2));
+let taktMs = 0;
 const vvod = new Vvod(document.body);
 const stsena = new Stsena();
 const hud = document.getElementById('hud') as HTMLDivElement;
@@ -54,16 +60,20 @@ async function start(): Promise<void> {
     last = now;
     while (nakoplen >= MIR.shag) {
       const nam = vvod.sobrat();
+      const t0 = performance.now();
       telo.primenit(nam);
+      for (const s of statisty) s.primenit(nam);
       mir.shag();
       telo.posle(nam);
+      for (const s of statisty) s.posle(nam);
+      taktMs = taktMs * 0.95 + (performance.now() - t0) * 0.05;
       nakoplen -= MIR.shag;
       taktov++;
     }
     const [cx, cy] = telo.centr();
     stsena.kamX += (cx - stsena.kamX) * 0.1;
     stsena.kamY += (cy + 1 - stsena.kamY) * 0.1;
-    stsena.risovat(mir, [telo], nakoplen / MIR.shag);
+    stsena.risovat(mir, [telo, ...statisty], nakoplen / MIR.shag);
     risovatUi();
     kadrov++;
     if (now - fpsT > 500) {

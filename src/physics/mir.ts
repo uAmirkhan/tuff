@@ -7,6 +7,9 @@ export const MAX_SVYAZEY = 8192;
 export const MAX_OTREZKOV = 4096;
 export const MAX_VREMENNYH = 512;
 export const MAX_KONTUROV = 256;
+export const SETKA = 2; // размер ячейки сетки отрезков в единицах
+export const MAX_YACHEEK = 65536;
+const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
 
 export interface ParametryMira {
   shag: number;
@@ -58,6 +61,22 @@ export class Mir {
   readonly hrupkost = new Float64Array(MAX_OTREZKOV); // 0 = неразрушим, иначе порог импульса удара
   readonly udar = new Float64Array(MAX_OTREZKOV); // накопленный импульс удара за такт
   slomano: number[] = [];
+
+  // Пространственная сетка отрезков: ячейки размером SETKA, списки в формате CSR
+  private setkaGryaznaya = true;
+  private setkaMinX = 0;
+  private setkaMinY = 0;
+  private setkaW = 1;
+  private setkaH = 1;
+  private readonly setkaNachalo = new Int32Array(MAX_YACHEEK + 1);
+  private readonly setkaElementy = new Int32Array(MAX_OTREZKOV * 64);
+  private readonly setkaSchet = new Int32Array(MAX_YACHEEK);
+  private readonly oShtamp = new Int32Array(MAX_OTREZKOV);
+  private shtamp = 1;
+  private readonly oMinX = new Float64Array(MAX_OTREZKOV);
+  private readonly oMinY = new Float64Array(MAX_OTREZKOV);
+  private readonly oMaxX = new Float64Array(MAX_OTREZKOV);
+  private readonly oMaxY = new Float64Array(MAX_OTREZKOV);
 
   // Временные связи Вязкости: частица к точке на отрезке
   v = 0;
@@ -149,11 +168,13 @@ export class Mir {
     this.hrupkost[i] = 0;
     this.udar[i] = 0;
     this.oOdnostor[i] = odnostor;
+    this.setkaGryaznaya = true;
     return i;
   }
 
   ubratOtrezok(i: number): void {
     this.oZhiv[i] = 0;
+    this.setkaGryaznaya = true;
     for (let j = 0; j < this.v; j++) {
       if (this.vZhiva[j] && this.vOtrezok[j] === i) this.razorvatVremennuyu(j);
     }
@@ -365,124 +386,236 @@ export class Mir {
     }
   }
 
+  private postroitSetku(): void {
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    for (let o = 0; o < this.k; o++) {
+      if (!this.oZhiv[o]) continue;
+      const ax = Math.min(this.oX1[o] as number, this.oX2[o] as number) - ZAPAS;
+      const ay = Math.min(this.oY1[o] as number, this.oY2[o] as number) - ZAPAS;
+      const bx = Math.max(this.oX1[o] as number, this.oX2[o] as number) + ZAPAS;
+      const by = Math.max(this.oY1[o] as number, this.oY2[o] as number) + ZAPAS;
+      this.oMinX[o] = ax;
+      this.oMinY[o] = ay;
+      this.oMaxX[o] = bx;
+      this.oMaxY[o] = by;
+      if (ax < minX) minX = ax;
+      if (ay < minY) minY = ay;
+      if (bx > maxX) maxX = bx;
+      if (by > maxY) maxY = by;
+    }
+    if (minX === Infinity) {
+      minX = 0;
+      minY = 0;
+      maxX = 1;
+      maxY = 1;
+    }
+    this.setkaMinX = minX;
+    this.setkaMinY = minY;
+    let w = Math.ceil((maxX - minX) / SETKA) + 1;
+    let h = Math.ceil((maxY - minY) / SETKA) + 1;
+    while (w * h > MAX_YACHEEK) {
+      // слишком большой мир: укрупняем ячейки через масштаб счёта
+      w = Math.ceil(w / 2);
+      h = Math.ceil(h / 2);
+    }
+    this.setkaW = w;
+    this.setkaH = h;
+    const yacheek = w * h;
+    this.setkaSchet.fill(0, 0, yacheek);
+    // первый проход: счёт
+    for (let o = 0; o < this.k; o++) {
+      if (!this.oZhiv[o]) continue;
+      const cx0 = this.yachX(this.oMinX[o] as number),
+        cx1 = this.yachX(this.oMaxX[o] as number);
+      const cy0 = this.yachY(this.oMinY[o] as number),
+        cy1 = this.yachY(this.oMaxY[o] as number);
+      for (let cy = cy0; cy <= cy1; cy++)
+        for (let cx = cx0; cx <= cx1; cx++)
+          this.setkaSchet[cy * w + cx] = (this.setkaSchet[cy * w + cx] as number) + 1;
+    }
+    let sum = 0;
+    for (let c = 0; c < yacheek; c++) {
+      this.setkaNachalo[c] = sum;
+      sum += this.setkaSchet[c] as number;
+    }
+    this.setkaNachalo[yacheek] = sum;
+    if (sum > this.setkaElementy.length) throw new Error('переполнение сетки отрезков');
+    this.setkaSchet.fill(0, 0, yacheek);
+    // второй проход: заполнение
+    for (let o = 0; o < this.k; o++) {
+      if (!this.oZhiv[o]) continue;
+      const cx0 = this.yachX(this.oMinX[o] as number),
+        cx1 = this.yachX(this.oMaxX[o] as number);
+      const cy0 = this.yachY(this.oMinY[o] as number),
+        cy1 = this.yachY(this.oMaxY[o] as number);
+      for (let cy = cy0; cy <= cy1; cy++)
+        for (let cx = cx0; cx <= cx1; cx++) {
+          const c = cy * w + cx;
+          this.setkaElementy[(this.setkaNachalo[c] as number) + (this.setkaSchet[c] as number)] = o;
+          this.setkaSchet[c] = (this.setkaSchet[c] as number) + 1;
+        }
+    }
+    this.setkaGryaznaya = false;
+  }
+
+  private yachX(x: number): number {
+    let c = Math.floor((x - this.setkaMinX) / SETKA);
+    if (c < 0) c = 0;
+    else if (c >= this.setkaW) c = this.setkaW - 1;
+    return c;
+  }
+
+  private yachY(y: number): number {
+    let c = Math.floor((y - this.setkaMinY) / SETKA);
+    if (c < 0) c = 0;
+    else if (c >= this.setkaH) c = this.setkaH - 1;
+    return c;
+  }
+
   private kontakty(): void {
+    if (this.setkaGryaznaya) this.postroitSetku();
+    const w = this.setkaW;
     for (let i = 0; i < this.n; i++) {
       const r = this.radius[i] as number;
-      for (let o = 0; o < this.k; o++) {
-        if (!this.oZhiv[o]) continue;
-        // позиция читается заново на каждом отрезке: прошлый отрезок мог её сдвинуть
-        const x = this.x[i] as number,
-          y = this.y[i] as number;
-        const x1 = this.oX1[o] as number,
-          y1 = this.oY1[o] as number;
-        const ex = (this.oX2[o] as number) - x1,
-          ey = (this.oY2[o] as number) - y1;
-        const el = ex * ex + ey * ey;
-        // Непрерывная проверка: путь px->x пересёк отрезок? Тогда вернуть на сторону px.
-        const pxi = this.px[i] as number,
-          pyi = this.py[i] as number;
-        const l0 = Math.sqrt(el) || 1;
-        const snx = -ey / l0,
-          sny = ex / l0;
-        const sPrev = (pxi - x1) * snx + (pyi - y1) * sny;
-        const sNow = (x - x1) * snx + (y - y1) * sny;
-        if (this.oOdnostor[o]) {
-          // односторонний: всё, что ближе радиуса к свободной стороне или ушло в твёрдую, наружу
-          if (sNow < r && sNow > -0.5) {
-            const u = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
-            if (u >= 0 && u <= 1) {
-              const pen = r - sNow;
-              this.x[i] = x + snx * pen;
-              this.y[i] = y + sny * pen;
-              this.udar[o] =
-                (this.udar[o] as number) + Math.max(0, pen) * (this.massa[i] as number);
-              const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
-              const vx = (this.x[i] as number) - pxi;
-              const vy = (this.y[i] as number) - pyi;
-              const vt = vx * -sny + vy * snx;
-              const maxGas = mu * Math.max(0, pen);
-              const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
-              this.x[i] = (this.x[i] as number) - -sny * gas;
-              this.y[i] = (this.y[i] as number) - snx * gas;
-              this.kontakt[i] = 1;
-              this.kontNx[i] = snx;
-              this.kontNy[i] = sny;
-              this.kontOtrezok[i] = o;
-              this.kontX[i] = x1 + ex * u;
-              this.kontY[i] = y1 + ey * u;
-            }
-          }
-          continue;
-        }
-        if (sPrev * sNow < 0 && Math.abs(sPrev) > 1e-9) {
-          const tt = sPrev / (sPrev - sNow);
-          const ix = pxi + (x - pxi) * tt,
-            iy = pyi + (y - pyi) * tt;
-          const u = el > 0 ? ((ix - x1) * ex + (iy - y1) * ey) / el : 0;
-          if (u >= 0 && u <= 1) {
-            const zn = sPrev > 0 ? 1 : -1;
-            this.x[i] = ix + snx * r * zn;
-            this.y[i] = iy + sny * r * zn;
-            this.udar[o] = (this.udar[o] as number) + Math.abs(sNow) * (this.massa[i] as number);
-            this.kontakt[i] = 1;
-            this.kontNx[i] = snx * zn;
-            this.kontNy[i] = sny * zn;
-            this.kontOtrezok[i] = o;
-            this.kontX[i] = ix;
-            this.kontY[i] = iy;
-            continue;
+      // охваченные ячейки: текущая и прошлая позиция с запасом радиуса
+      const xi = this.x[i] as number,
+        yi = this.y[i] as number,
+        pxi0 = this.px[i] as number,
+        pyi0 = this.py[i] as number;
+      const cx0 = this.yachX(Math.min(xi, pxi0) - r),
+        cx1 = this.yachX(Math.max(xi, pxi0) + r);
+      const cy0 = this.yachY(Math.min(yi, pyi0) - r),
+        cy1 = this.yachY(Math.max(yi, pyi0) + r);
+      this.shtamp++;
+      for (let cy = cy0; cy <= cy1; cy++) {
+        for (let cx = cx0; cx <= cx1; cx++) {
+          const c = cy * w + cx;
+          const ot = this.setkaNachalo[c] as number,
+            do_ = this.setkaNachalo[c + 1] as number;
+          for (let e = ot; e < do_; e++) {
+            const o = this.setkaElementy[e] as number;
+            if (this.oShtamp[o] === this.shtamp) continue;
+            this.oShtamp[o] = this.shtamp;
+            this.kontaktSOtrezkom(i, o, r);
           }
         }
-        let t = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const cx = x1 + ex * t,
-          cy = y1 + ey * t;
-        let dx = x - cx,
-          dy = y - cy;
-        const d2 = dx * dx + dy * dy;
-        if (d2 >= r * r) continue;
-        let d = Math.sqrt(d2);
-        let nx: number, ny: number;
-        if (d < 1e-9) {
-          // частица ровно на отрезке: нормаль слева от направления отрезка, к прошлой позиции
-          const l = Math.sqrt(el) || 1;
-          nx = -ey / l;
-          ny = ex / l;
-          const sx = (this.px[i] as number) - cx,
-            sy = (this.py[i] as number) - cy;
-          if (sx * nx + sy * ny < 0) {
-            nx = -nx;
-            ny = -ny;
-          }
-          d = 0;
-        } else {
-          nx = dx / d;
-          ny = dy / d;
-        }
-        const pen = r - d;
-        // выталкивание
-        this.x[i] = x + nx * pen;
-        this.y[i] = y + ny * pen;
-        this.udar[o] = (this.udar[o] as number) + pen * (this.massa[i] as number);
-        // трение Кулона: тангенциальное смещение за такт гасится не больше чем на mu*pen
-        const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
-        const vx = (this.x[i] as number) - (this.px[i] as number);
-        const vy = (this.y[i] as number) - (this.py[i] as number);
-        const vt = vx * -ny + vy * nx; // проекция на касательную
-        const maxGas = mu * pen;
-        const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
-        this.x[i] = (this.x[i] as number) - -ny * gas;
-        this.y[i] = (this.y[i] as number) - nx * gas;
-        this.kontakt[i] = 1;
-        this.kontNx[i] = nx;
-        this.kontNy[i] = ny;
-        this.kontOtrezok[i] = o;
-        this.kontX[i] = cx;
-        this.kontY[i] = cy;
-        dx = 0;
-        dy = 0;
       }
     }
+  }
+
+  private kontaktSOtrezkom(i: number, o: number, r: number): void {
+    if (!this.oZhiv[o]) return;
+    // позиция читается заново на каждом отрезке: прошлый отрезок мог её сдвинуть
+    const x = this.x[i] as number,
+      y = this.y[i] as number;
+    const x1 = this.oX1[o] as number,
+      y1 = this.oY1[o] as number;
+    const ex = (this.oX2[o] as number) - x1,
+      ey = (this.oY2[o] as number) - y1;
+    const el = ex * ex + ey * ey;
+    // Непрерывная проверка: путь px->x пересёк отрезок? Тогда вернуть на сторону px.
+    const pxi = this.px[i] as number,
+      pyi = this.py[i] as number;
+    const l0 = Math.sqrt(el) || 1;
+    const snx = -ey / l0,
+      sny = ex / l0;
+    const sPrev = (pxi - x1) * snx + (pyi - y1) * sny;
+    const sNow = (x - x1) * snx + (y - y1) * sny;
+    if (this.oOdnostor[o]) {
+      // односторонний: всё, что ближе радиуса к свободной стороне или ушло в твёрдую, наружу
+      if (sNow < r && sNow > -0.5) {
+        const u = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+        if (u >= 0 && u <= 1) {
+          const pen = r - sNow;
+          this.x[i] = x + snx * pen;
+          this.y[i] = y + sny * pen;
+          this.udar[o] = (this.udar[o] as number) + Math.max(0, pen) * (this.massa[i] as number);
+          const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
+          const vx = (this.x[i] as number) - pxi;
+          const vy = (this.y[i] as number) - pyi;
+          const vt = vx * -sny + vy * snx;
+          const maxGas = mu * Math.max(0, pen);
+          const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
+          this.x[i] = (this.x[i] as number) - -sny * gas;
+          this.y[i] = (this.y[i] as number) - snx * gas;
+          this.kontakt[i] = 1;
+          this.kontNx[i] = snx;
+          this.kontNy[i] = sny;
+          this.kontOtrezok[i] = o;
+          this.kontX[i] = x1 + ex * u;
+          this.kontY[i] = y1 + ey * u;
+        }
+      }
+      return;
+    }
+    if (sPrev * sNow < 0 && Math.abs(sPrev) > 1e-9) {
+      const tt = sPrev / (sPrev - sNow);
+      const ix = pxi + (x - pxi) * tt,
+        iy = pyi + (y - pyi) * tt;
+      const u = el > 0 ? ((ix - x1) * ex + (iy - y1) * ey) / el : 0;
+      if (u >= 0 && u <= 1) {
+        const zn = sPrev > 0 ? 1 : -1;
+        this.x[i] = ix + snx * r * zn;
+        this.y[i] = iy + sny * r * zn;
+        this.udar[o] = (this.udar[o] as number) + Math.abs(sNow) * (this.massa[i] as number);
+        this.kontakt[i] = 1;
+        this.kontNx[i] = snx * zn;
+        this.kontNy[i] = sny * zn;
+        this.kontOtrezok[i] = o;
+        this.kontX[i] = ix;
+        this.kontY[i] = iy;
+        return;
+      }
+    }
+    let t = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+    const cx = x1 + ex * t,
+      cy = y1 + ey * t;
+    const dx = x - cx,
+      dy = y - cy;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= r * r) return;
+    let d = Math.sqrt(d2);
+    let nx: number, ny: number;
+    if (d < 1e-9) {
+      // частица ровно на отрезке: нормаль слева от направления отрезка, к прошлой позиции
+      const l = Math.sqrt(el) || 1;
+      nx = -ey / l;
+      ny = ex / l;
+      const sx = (this.px[i] as number) - cx,
+        sy = (this.py[i] as number) - cy;
+      if (sx * nx + sy * ny < 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+      d = 0;
+    } else {
+      nx = dx / d;
+      ny = dy / d;
+    }
+    const pen = r - d;
+    // выталкивание
+    this.x[i] = x + nx * pen;
+    this.y[i] = y + ny * pen;
+    this.udar[o] = (this.udar[o] as number) + pen * (this.massa[i] as number);
+    // трение Кулона: тангенциальное смещение за такт гасится не больше чем на mu*pen
+    const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
+    const vx = (this.x[i] as number) - (this.px[i] as number);
+    const vy = (this.y[i] as number) - (this.py[i] as number);
+    const vt = vx * -ny + vy * nx; // проекция на касательную
+    const maxGas = mu * pen;
+    const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
+    this.x[i] = (this.x[i] as number) - -ny * gas;
+    this.y[i] = (this.y[i] as number) - nx * gas;
+    this.kontakt[i] = 1;
+    this.kontNx[i] = nx;
+    this.kontNy[i] = ny;
+    this.kontOtrezok[i] = o;
+    this.kontX[i] = cx;
+    this.kontY[i] = cy;
   }
 }

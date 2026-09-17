@@ -9,7 +9,7 @@
     "noImplicitOverride": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "isolatedModules": true
   },
   "include": ["src", "tests", "scripts"]
