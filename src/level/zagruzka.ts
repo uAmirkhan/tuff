@@ -341,7 +341,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
         s.svyazi.push(sv);
       }
     }
-    if (o.tip === 'porshen' || o.tip === 'konveyer') {
+    if (o.tip === 'porshen' || o.tip === 'konveyer' || o.tip === 'kriostat') {
       // твёрдый прямоугольник из четырёх односторонних отрезков (как заслонка), металл:
       // верхняя грань идёт слева направо, твёрдая сторона снизу
       const x1 = o.x,

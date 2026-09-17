@@ -4,6 +4,7 @@ import type { Mir } from '../physics/mir';
 import { TroynoyKotyol } from './boss';
 import { MIR } from './config/telo';
 import { BOY, SEMEYSTVA, VODA_ZASTYVANIE, VRAGI } from './config/vragi';
+import { Kriostat } from './kriostat';
 
 const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
@@ -46,7 +47,7 @@ export class Igra {
   private korkaDo = 0;
 
   readonly vragi: Vrag[] = [];
-  boss: TroynoyKotyol | null = null;
+  boss: TroynoyKotyol | Kriostat | null = null;
   // Жерло: высота и самое длинное падение
   maksVysota = 0;
   padenieOt = 0;
@@ -67,6 +68,8 @@ export class Igra {
     }
     if (ur.sushchnosti.some((s) => s.tip === 'kotyol')) {
       this.boss = new TroynoyKotyol(mir, ur.sushchnosti, this.vragi);
+    } else if (ur.sushchnosti.some((s) => s.tip === 'kriostat')) {
+      this.boss = new Kriostat(mir, ur.sushchnosti);
     }
   }
 
@@ -404,16 +407,29 @@ export class Igra {
       for (let i = this.telo.ot; i < this.telo.ot + this.telo.n; i++)
         vy += (m.py[i] as number) - (m.y[i] as number);
       vy /= this.telo.n; // положительное = движение вниз
-      const lava = this.ur.sushchnosti.some(
-        (s) => s.tip === 'lava' && s.aktivna && s.id === 'zaliv',
-      );
       const bylo = this.boss.sobytiya.length;
-      this.boss.takt(g, this.telo.vKorke, vy, lava, 100 + this.takty);
+      if (this.boss instanceof TroynoyKotyol) {
+        const lava = this.ur.sushchnosti.some(
+          (s) => s.tip === 'lava' && s.aktivna && s.id === 'zaliv',
+        );
+        this.boss.takt(g, this.telo.vKorke, vy, lava, 100 + this.takty);
+      } else {
+        // Криостат: обдув надевает Корку как иней (со следующего такта), хватка жжёт холодом
+        const r = this.boss.takt(g, cx, this.telo.vKorke, vy);
+        if (r.moroz) this.korkaDo = Math.max(this.korkaDo, this.takty + 60);
+        if (r.uron > 0) {
+          this.zhar -= r.uron;
+          this.prichinaUrona = 'манипулятор';
+        }
+      }
       for (let i = bylo; i < this.boss.sobytiya.length; i++)
         this.sobytiya.push({ tip: 'boss', chto: this.boss.sobytiya[i] as string });
       if (this.boss.pobezhdyon) {
-        for (const s of this.ur.sushchnosti)
+        for (const s of this.ur.sushchnosti) {
           if (s.tip === 'zaslonka' && s.id === 'vyhod-zaslonka') this.pereklyuchit(s.id, true);
+          // табло опыта: «процедура прервана»
+          if (s.tip === 'okno' && s.id === 'tablo-opyt') s.nadpis = 'прервана';
+        }
         for (const v of this.vragi) if (v.zhiv) v.umeret();
       }
     }
