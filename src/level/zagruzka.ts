@@ -162,9 +162,10 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       let prev = a;
       // мост провисает по параболе: дуга длиннее прямой в zapas раз, звенья не сжаты и не растянуты
       const pryamaya = Math.hypot(x2 - o.x, y2 - o.y);
-      const proves = dvaYakorya ? Math.sqrt((3 * pryamaya * pryamaya * (CEP.zapas - 1)) / 8) : 0;
+      const zapas = o.zapas ?? CEP.zapas;
+      const proves = dvaYakorya ? Math.sqrt((3 * pryamaya * pryamaya * (zapas - 1)) / 8) : 0;
       // радиус звена от шага: звенья перекрываются, тело не проваливается между ними
-      const shagZvena = (pryamaya * (dvaYakorya ? CEP.zapas : 1)) / (n + (dvaYakorya ? 1 : 0));
+      const shagZvena = (pryamaya * (dvaYakorya ? zapas : 1)) / (n + (dvaYakorya ? 1 : 0));
       const radiusZvena = Math.max(CEP.radiusZvena, shagZvena * 0.55);
       for (let i = 1; i <= n; i++) {
         const t = i / (n + (dvaYakorya ? 1 : 0));
