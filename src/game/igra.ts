@@ -38,6 +38,7 @@ export class Igra {
   serdca = 0;
   takty = 0;
   smerti = 0;
+  private prichinaUrona = 'холод'; // последний источник урона, подпись к смерти от потери жара
   gotovo = false;
   chekpoint: [number, number];
   readonly sobytiya: Sobytie[] = [];
@@ -60,7 +61,7 @@ export class Igra {
     this.chekpoint = [ur.dannye.start[0], ur.dannye.start[1]];
     let zerno = 7;
     for (const s of ur.sushchnosti) {
-      if (s.tip === 'shlakozhuk' || s.tip === 'iskropryg') {
+      if (s.tip === 'obrezok' || s.tip === 'skachok') {
         this.vragi.push(new Vrag(mir, s.tip, s.x, s.y, zerno++));
       }
     }
@@ -194,8 +195,12 @@ export class Igra {
       this.zhar = Math.min(ZHAR.maks, this.zhar + ZHAR.lechenieLavy);
       this.korkaDo = 0;
     }
-    if (vShipah) this.zhar -= ZHAR.uronShipov;
+    if (vShipah) {
+      this.zhar -= ZHAR.uronShipov;
+      this.prichinaUrona = 'шипы';
+    }
     if (vVode) {
+      this.prichinaUrona = 'вода';
       this.zhar -= ZHAR.uronVody;
       this.korkaDo = this.takty + ZHAR.korkaPosleVody;
     }
@@ -304,6 +309,7 @@ export class Igra {
           if (udar > BOY.porogDavleniya) v.zhar -= BOY.uronDavleniya;
         } else {
           this.zhar -= k.uronIgroku;
+          this.prichinaUrona = 'враг';
           this.sobytiya.push({ tip: 'uronOtVraga' });
         }
       }
@@ -390,7 +396,7 @@ export class Igra {
     // Падение за границы уровня
     const gr = this.ur.dannye.granicy;
     if (cy < gr.minY - 2 || cx < gr.minX - 5 || cx > gr.maxX + 5) this.umeret('падение');
-    if (this.zhar <= 0) this.umeret(vVode ? 'вода' : 'шипы');
+    if (this.zhar <= 0) this.umeret(this.prichinaUrona);
     // сторожа тела: взрыв, выворачивание, самопересечение; событие в журнал и в события такта
     const storozh = this.telo.storozha();
     if (storozh) this.sobytiya.push({ tip: 'storozh', prichina: storozh });

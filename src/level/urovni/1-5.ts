@@ -129,10 +129,10 @@ export const UROVEN_1_5: Uroven = {
       razryv: 0.09, // калибровка scripts/most2b.ts
     },
     { tip: 'zharkamenSredniy', x: 21.5, y: 3.4 },
-    { tip: 'iskropryg', id: 'v-1', x: 20, y: 0.6 },
+    { tip: 'skachok', id: 'v-1', x: 20, y: 0.6 },
     { tip: 'serdce', id: 's-yama-2', x: 19, y: 0.8 },
     { tip: 'gorn', id: 'g-pravaya', x: 27, y: 3.2 },
-    { tip: 'shlakozhuk', id: 'v-2', x: 31, y: 3.0 },
+    { tip: 'obrezok', id: 'v-2', x: 31, y: 3.0 },
     // плита под Корку открывает заслонку
     { tip: 'plita', id: 'p', x: 34, y: 2.6, cel: 'z', nuzhnaKorka: true },
     { tip: 'zaslonka', id: 'z', x: 38, y: 2.6, w: 0.6, h: 2.4 },

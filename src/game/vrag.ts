@@ -1,10 +1,10 @@
-// Враги мира 1: Шлакожук (ползёт и жжёт холодом) и Искропрыг (то же, иногда прыгает).
+// Враги мира 1: Обрезок (ползёт и жжёт холодом) и Скачок (то же, иногда прыгает).
 // Тело: 4 точки прямоугольником с диагоналями и контуром площади. ИИ: общий автомат.
 
 import type { Mir } from '../physics/mir';
 import { VRAGI } from './config/vragi';
 
-export type TipVraga = 'shlakozhuk' | 'iskropryg';
+export type TipVraga = 'obrezok' | 'skachok';
 
 export class Vrag {
   readonly ot: number;
@@ -85,7 +85,7 @@ export class Vrag {
     if (this.naZemle() && !this.kasaetsya) {
       for (let i = this.ot; i < this.ot + this.n; i++)
         m.px[i] = (m.px[i] as number) - this.napravlenie * k.tyaga;
-      // Искропрыг иногда прыгает, если игрок выше или далеко
+      // Скачок иногда прыгает, если игрок выше или далеко
       if (k.pryzhok > 0 && takt - this.pryzhokTakt > 90 && this.rnd() < k.shansPryzhka) {
         this.pryzhokTakt = takt;
         for (let i = this.ot; i < this.ot + this.n; i++) m.py[i] = (m.py[i] as number) - k.pryzhok;

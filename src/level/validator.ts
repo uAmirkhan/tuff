@@ -38,8 +38,8 @@ export function proveritUroven(u: Uroven): string[] {
       oshibki.push(`панель ${o.id ?? '?'} без номера 1..15`);
     if (o.tip === 'shema' && !['vyazkost', 'rasplav', 'korka', 'vybros'].includes(o.vid ?? ''))
       oshibki.push(`схема ${o.id ?? '?'} без вида способности`);
-    if (o.tip === 'okno' && !['stvol', 'budushchee'].includes(o.vid ?? ''))
-      oshibki.push(`окно ${o.id ?? '?'} без вида (stvol, budushchee)`);
+    if (o.tip === 'okno' && !['stvol', 'budushchee', 'steklo'].includes(o.vid ?? ''))
+      oshibki.push(`окно ${o.id ?? '?'} без вида (stvol, budushchee, steklo)`);
     if (o.tip === 'koromyslo' && (!o.w || !o.h))
       oshibki.push(`коромысло ${o.id ?? '?'} без размеров`);
     if (

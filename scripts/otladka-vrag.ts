@@ -27,7 +27,7 @@ const u: Uroven = {
     { tip: 'serdce', x: 25, y: 1 },
     { tip: 'serdce', x: 26, y: 1 },
     { tip: 'serdce', x: 27, y: 1 },
-    { tip: 'shlakozhuk', x: 7, y: 0.4 },
+    { tip: 'obrezok', x: 7, y: 0.4 },
   ],
 };
 const mir = new Mir(MIR);

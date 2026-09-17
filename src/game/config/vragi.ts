@@ -1,6 +1,6 @@
 // Параметры врагов мира 1. Стартовые числа, настройка по ощущению.
 export const VRAGI = {
-  shlakozhuk: {
+  obrezok: {
     zhar: 30,
     massa: 0.3,
     shirina: 0.7,
@@ -12,7 +12,7 @@ export const VRAGI = {
     shansPryzhka: 0,
     uronIgroku: 0.4, // жара за такт контакта
   },
-  iskropryg: {
+  skachok: {
     zhar: 25,
     massa: 0.25,
     shirina: 0.55,
