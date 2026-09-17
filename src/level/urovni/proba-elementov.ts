@@ -62,6 +62,10 @@ export const UROVEN_PROBA: Uroven = {
     },
     { tip: 'porshen', id: 'p2', x: 19, y: 5, w: 2.5, h: 0.5, hodX: 5, hodY: 0, period: 8 },
     { tip: 'mayatnik', id: 'm1', x: 29, y: 10, w: 1.2, h: 1, dlina: 4 },
+    // вода с понтоном и вентилятор у правой стены
+    { tip: 'voda', id: 'v1', x: 22, y: 0, w: 5, h: 2 },
+    { tip: 'yashchik', id: 'ponton', x: 24, y: 0.2, w: 1.4, h: 0.8 },
+    { tip: 'potok', id: 'vent', x: 35, y: 0, w: 2, h: 9, silaX: 0, silaY: 14 },
     { tip: 'serdce', id: 's1', x: 30, y: 8 },
     { tip: 'serdce', id: 's2', x: 36, y: 1 },
     { tip: 'serdce', id: 's3', x: 20, y: 1 },
