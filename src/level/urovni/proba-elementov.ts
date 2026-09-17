@@ -52,7 +52,7 @@ export const UROVEN_PROBA: Uroven = {
       tip: 'porshen',
       id: 'p1',
       x: 15,
-      y: 0.5,
+      y: 0, // вровень с полом: щель под поршнем зажимала контейнер и героя
       w: 2,
       h: 0.5,
       hodX: 0,

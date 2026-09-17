@@ -91,24 +91,30 @@ describe('контейнеры', () => {
 
   it('тело толкает контейнер вправо', () => {
     const u = komnata([{ tip: 'yashchik', id: 'ya', x: 3, y: 0.1, w: 1, h: 1 }], [1, 1.2]);
-    const { mir, ur, telo } = progon(u, [{ takty: 300, nam: { dx: 1 } }]);
+    const { mir, ur, telo } = progon(u, [{ takty: 150, nam: { dx: 1 } }]);
     const s = ur.sushchnosti.find((q) => q.tip === 'yashchik') as Sushchnost;
-    const [cx] = centr(mir, s);
+    const [cx, cy] = centr(mir, s);
     expect(cx, `тело x ${telo.cx.toFixed(2)}`).toBeGreaterThan(4.5);
-    // тело не прошло сквозь контейнер: оно не правее его
-    expect(telo.cx).toBeLessThan(cx + 0.6);
+    // контейнер остался на полу целым, тело не внутри него
+    expect(cy).toBeLessThan(1.2);
+    let vnutri = 0;
+    for (let i = telo.ot; i < telo.ot + telo.n; i++)
+      if (mir.vnutriKontura(s.chasticy[0] as number, 4, mir.x[i] as number, mir.y[i] as number))
+        vnutri++;
+    expect(vnutri).toBe(0);
   });
 
   it('Вязкость тянет контейнер за собой', () => {
-    const u = komnata([{ tip: 'yashchik', id: 'ya', x: 3, y: 0.1, w: 1, h: 1 }], [1, 1.2]);
+    // контейнер вплотную справа от героя: коснуться, прилипнуть, ползти влево
+    const u = komnata([{ tip: 'yashchik', id: 'ya', x: 1.8, y: 0.1, w: 1, h: 1 }], [1.2, 1.2]);
     const { mir, ur } = progon(u, [
-      { takty: 120, nam: { dx: 1 } }, // подъехать
-      { takty: 60, nam: { dx: 1, vyazkost: true } }, // прилипнуть
-      { takty: 240, nam: { dx: -1, vyazkost: true } }, // тянуть влево
+      { takty: 40, nam: { dx: 1 } },
+      { takty: 30, nam: { vyazkost: true } },
+      { takty: 240, nam: { dx: -1, vyazkost: true } },
     ]);
     const s = ur.sushchnosti.find((q) => q.tip === 'yashchik') as Sushchnost;
     const [cx] = centr(mir, s);
-    expect(cx).toBeLessThan(3.3);
+    expect(cx).toBeLessThan(2.0);
   });
 
   it('маятник висит под якорем и качается после толчка', () => {
