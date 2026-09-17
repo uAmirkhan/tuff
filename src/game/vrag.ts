@@ -2,9 +2,9 @@
 // Тело: 4 точки прямоугольником с диагоналями и контуром площади. ИИ: общий автомат.
 
 import type { Mir } from '../physics/mir';
-import { VRAGI } from './config/vragi';
+import { SEMEYSTVA, VRAGI } from './config/vragi';
 
-export type TipVraga = 'obrezok' | 'skachok';
+export type TipVraga = 'obrezok' | 'skachok' | 'uborshchik';
 
 export class Vrag {
   readonly ot: number;
@@ -14,6 +14,8 @@ export class Vrag {
   zhiv = true;
   napravlenie = 1;
   kasaetsya = false; // касается героя в этом такте: вцепился, не давит дальше
+  vyklyuchen = false; // замкнут в воде (дрон) или застыл (обрезок): не двигается, не жжёт
+  vVodeTaktov = 0;
   private pryzhokTakt = 0;
   private sluchay: number;
   cx = 0;
@@ -37,10 +39,13 @@ export class Vrag {
     mir.dobavitTochku(x + hw, y - hh, k.massa, 0.05, k.trenie, 0.99);
     mir.dobavitTochku(x + hw, y + hh, k.massa, 0.05, k.trenie, 0.99);
     mir.dobavitTochku(x - hw, y + hh, k.massa, 0.05, k.trenie, 0.99);
-    for (let i = 0; i < 4; i++) mir.dobavitSvyaz(this.ot + i, this.ot + ((i + 1) % 4), 0.6, 1);
-    mir.dobavitSvyaz(this.ot, this.ot + 2, 0.4, 1);
-    mir.dobavitSvyaz(this.ot + 1, this.ot + 3, 0.4, 1);
-    this.kontur = mir.dobavitKontur(this.ot, 4, 0.3, 1);
+    const tv = SEMEYSTVA[tip].tverdyy;
+    const zh = tv ? 0.9 : 0.6,
+      zhd = tv ? 0.9 : 0.4;
+    for (let i = 0; i < 4; i++) mir.dobavitSvyaz(this.ot + i, this.ot + ((i + 1) % 4), zh, 1);
+    mir.dobavitSvyaz(this.ot, this.ot + 2, zhd, 1);
+    mir.dobavitSvyaz(this.ot + 1, this.ot + 3, zhd, 1);
+    this.kontur = mir.dobavitKontur(this.ot, 4, tv ? 0.5 : 0.3, 1);
   }
 
   // детерминированный случай
@@ -70,19 +75,39 @@ export class Vrag {
 
   // ИИ: идти к игроку по горизонтали, при сближении вцепиться (урон считает игра).
   // Вызывать до mir.shag().
+  private proshlyyX = Number.NaN;
+  private zastryal = 0;
   dumat(igrokX: number, igrokY: number, takt: number): void {
-    if (!this.zhiv) return;
+    if (!this.zhiv || this.vyklyuchen) return;
     const k = VRAGI[this.tip];
+    const sem = SEMEYSTVA[this.tip];
     const m = this.mir;
     this.schitatCentr();
     const dx = igrokX - this.cx;
     const dy = igrokY - this.cy;
     const dist = Math.hypot(dx, dy);
-    if (dist > k.zrenie) return; // не видит
+    if (dist > k.zrenie) {
+      if (!sem.patrul) return; // не видит и не патрулирует
+      // патруль: едет в текущую сторону, у стены разворачивается (нет продвижения 30 тактов)
+      if (!Number.isNaN(this.proshlyyX) && Math.abs(this.cx - this.proshlyyX) < 0.002)
+        this.zastryal++;
+      else this.zastryal = 0;
+      this.proshlyyX = this.cx;
+      if (this.zastryal > 30) {
+        this.napravlenie = -this.napravlenie;
+        this.zastryal = 0;
+      }
+      if (this.naZemle())
+        for (let i = this.ot; i < this.ot + this.n; i++)
+          m.px[i] = (m.px[i] as number) - this.napravlenie * k.tyaga * 0.6;
+      return;
+    }
     this.napravlenie = dx > 0 ? 1 : -1;
     // 7 тактов из 8 идёт целенаправленно, иначе замирает
     if ((takt & 7) === 7) return;
-    if (this.naZemle() && !this.kasaetsya) {
+    // дрон толкает и при касании: в этом его регламент; обрезок вцепляется и не давит
+    const tolkaet = sem.tverdyy || !this.kasaetsya;
+    if (this.naZemle() && tolkaet) {
       for (let i = this.ot; i < this.ot + this.n; i++)
         m.px[i] = (m.px[i] as number) - this.napravlenie * k.tyaga;
       // Скачок иногда прыгает, если игрок выше или далеко
