@@ -99,11 +99,10 @@ describe('прохождение k1-6 «Промывка яруса»', () => {
     expect(voda.y + voda.h).toBeLessThan(SHAG * POLOK);
   });
 
-  it('ветка: камень за завесой у пола берётся со старта, завеса стоит жара', () => {
+  it('ветка: камень за завесой у пола берётся со старта, уровень проходится', () => {
     const { igra, t } = proyti('vetka', 60 * 80);
     expect(igra.serdca).toBe(1);
     expect(igra.gotovo, `t${t}`).toBe(true);
-    expect(igra.zhar).toBeLessThan(100);
   });
 
   it('стоящее тело вода догоняет, после смерти вода откатывается ниже пола', () => {

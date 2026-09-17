@@ -15,6 +15,7 @@ import { UROVEN_K1_5 } from './urovni/k1-5';
 import { UROVEN_K1_6 } from './urovni/k1-6';
 import { UROVEN_K1_7 } from './urovni/k1-7';
 import { UROVEN_PROBA } from './urovni/proba-elementov';
+import { UROVEN_STVOL_1 } from './urovni/stvol-1';
 import { UROVEN_ZH_1 } from './urovni/zherlo-1';
 
 export const UROVNI: Uroven[] = [
@@ -38,6 +39,7 @@ export const ISPYTATELNYE: Uroven[] = [
   UROVEN_K1_5,
   UROVEN_K1_6,
   UROVEN_K1_7,
+  UROVEN_STVOL_1,
 ]; // k1-*: черновики яруса 1, в кампанию после сборки яруса
 
 export function urovenPoId(id: string): Uroven | undefined {
