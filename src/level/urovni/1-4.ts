@@ -5,7 +5,7 @@ export const UROVEN_1_4: Uroven = {
   versiya: 1,
   id: '1-4',
   nazvanie: 'Потолок',
-  mysl: 'Вязкость с перехватом: ползти по потолку над лавой; Шлакожук жжёт, давится Коркой',
+  mysl: 'Вязкость с перехватом: ползти по потолку над лавой; Обрезок жжёт, давится Коркой',
   start: [2, 1.2],
   granicy: { minX: 0, minY: -3, maxX: 44, maxY: 12 },
   poligony: [
@@ -106,7 +106,7 @@ export const UROVEN_1_4: Uroven = {
   ],
   obekty: [
     { tip: 'gorn', id: 'g-start', x: 5, y: 0.6 },
-    { tip: 'shlakozhuk', id: 'v-1', x: 8, y: 0.4 },
+    { tip: 'obrezok', id: 'v-1', x: 8, y: 0.4 },
     { tip: 'zharkamen', x: 7, y: 0.6 },
     { tip: 'ispytanie', id: 'i-potolok', x: 11, y: 2.8 },
     { tip: 'gorn', id: 'g-kray', x: 11, y: 2.8 },
@@ -117,8 +117,8 @@ export const UROVEN_1_4: Uroven = {
     { tip: 'zharkamenSredniy', x: 28, y: 2.4 },
     { tip: 'serdce', id: 's-dno', x: 21, y: -1.2 }, // на дне ямы: лава лечит, можно упасть и вернуться? нет, яма без выхода: ставим уголёк-путь
     { tip: 'gorn', id: 'g-vtoraya', x: 32, y: 0.6 },
-    { tip: 'shlakozhuk', id: 'v-2', x: 36, y: 0.4 },
-    { tip: 'iskropryg', id: 'v-3', x: 39, y: 0.4 },
+    { tip: 'obrezok', id: 'v-2', x: 36, y: 0.4 },
+    { tip: 'skachok', id: 'v-3', x: 39, y: 0.4 },
     { tip: 'serdce', id: 's-potolok', x: 38, y: 4.4 }, // под верхней полкой над площадкой выхода
     { tip: 'vyhod', id: 'v', x: 42, y: 0.8 },
   ],

@@ -53,8 +53,8 @@ function stsena(u: Uroven) {
 }
 
 describe('враги', () => {
-  it('Шлакожук идёт к игроку и жжёт при касании', () => {
-    const { igra, takt } = stsena(uroven([{ tip: 'shlakozhuk', x: 7, y: 0.4 }]));
+  it('Обрезок идёт к игроку и жжёт при касании', () => {
+    const { igra, takt } = stsena(uroven([{ tip: 'obrezok', x: 7, y: 0.4 }]));
     const v = igra.vragi[0];
     if (!v) throw new Error('нет врага');
     v.schitatCentr();
@@ -68,7 +68,7 @@ describe('враги', () => {
   });
 
   it('тела не проходят друг сквозь друга: враг толкает, игрок отодвигается', () => {
-    const { igra, telo, takt } = stsena(uroven([{ tip: 'shlakozhuk', x: 4, y: 0.4 }]));
+    const { igra, telo, takt } = stsena(uroven([{ tip: 'obrezok', x: 4, y: 0.4 }]));
     takt(PUSTOE, 300);
     const v = igra.vragi[0];
     if (!v) throw new Error('нет врага');
@@ -82,7 +82,7 @@ describe('враги', () => {
   });
 
   it('падение в Корке сверху убивает врага', () => {
-    const { igra, takt } = stsena(uroven([{ tip: 'shlakozhuk', x: 2, y: 0.4 }], [2, 4]));
+    const { igra, takt } = stsena(uroven([{ tip: 'obrezok', x: 2, y: 0.4 }], [2, 4]));
     takt({ ...PUSTOE, korka: true }, 180);
     expect(igra.vragi[0]?.zhiv).toBe(false);
     expect(igra.zhar).toBe(100); // в Корке не обжёгся
@@ -91,7 +91,7 @@ describe('враги', () => {
   it('лава убивает врага, игроку лечит', () => {
     const { igra, takt } = stsena(
       uroven([
-        { tip: 'shlakozhuk', x: 12, y: 0.4 },
+        { tip: 'obrezok', x: 12, y: 0.4 },
         { tip: 'lava', x: 10, y: 0, w: 5, h: 0.5 },
       ]),
     );
@@ -99,8 +99,8 @@ describe('враги', () => {
     expect(igra.vragi[0]?.zhiv).toBe(false);
   });
 
-  it('Искропрыг прыгает', () => {
-    const { igra, takt } = stsena(uroven([{ tip: 'iskropryg', x: 8, y: 0.4 }]));
+  it('Скачок прыгает', () => {
+    const { igra, takt } = stsena(uroven([{ tip: 'skachok', x: 8, y: 0.4 }]));
     const v = igra.vragi[0];
     if (!v) throw new Error('нет врага');
     let maxY = -Infinity;

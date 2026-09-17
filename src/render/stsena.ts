@@ -260,6 +260,17 @@ export class Stsena {
             const m = this.masshtab;
             const w = s.w * m,
               h = s.h * m;
+            if (s.vid === 'steklo') {
+              // стекло над ямой: прозрачная плита с бликом, то, что за ним, видно
+              g.rect(x, y - h, w, h);
+              g.fill({ color: 0x9fd4ec, alpha: 0.12 });
+              g.rect(x, y - h, w, h);
+              g.stroke({ width: 3, color: 0xbfe0f4, alpha: 0.6 });
+              g.moveTo(x + w * 0.15, y - h * 0.9);
+              g.lineTo(x + w * 0.35, y - h * 0.6);
+              g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
+              break;
+            }
             g.rect(x, y - h, w, h);
             g.fill({ color: s.vid === 'stvol' ? 0x0d0a12 : 0x141a22 });
             if (s.vid === 'stvol') {
@@ -478,7 +489,7 @@ export class Stsena {
         else g.lineTo(this.ekX(x), this.ekY(y));
       }
       g.closePath();
-      g.fill({ color: v.tip === 'iskropryg' ? 0x5a7a9a : 0x4a5a6a });
+      g.fill({ color: v.tip === 'skachok' ? 0x5a7a9a : 0x4a5a6a });
       g.stroke({ width: 3, color: 0xbfe0f4, alpha: 0.95 });
       v.schitatCentr();
       const ex = this.ekX(v.cx) + v.napravlenie * this.masshtab * 0.12;

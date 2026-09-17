@@ -1,5 +1,5 @@
 // Босс мира 1 «Тройной котёл». Три неподвижных котла. Каждый по кругу открывает крышку,
-// выпускает Шлакожука и закрывается. Открытый котёл уязвим: удар Коркой сверху по горлу
+// выпускает Обрезока и закрывается. Открытый котёл уязвим: удар Коркой сверху по горлу
 // разбивает его. Запасной путь: рычаг арены заливает котлы лавой, каждый котёл в лаве гаснет.
 // Общий автомат «подойти, ударить, отойти» здесь вырожден в «открыться, выпустить, закрыться»:
 // индивидуальность босса в арене, не в коде.
@@ -96,19 +96,13 @@ export class TroynoyKotyol {
         }
         k.otkryt = true;
         k.taymer = BOSS.otkrytTaktov;
-        // выпустить Шлакожука
+        // выпустить Обрезока
         if (this.vragi.filter((v) => v.zhiv).length < BOSS.maksVragov) {
           this.vragi.push(
-            new Vrag(
-              this.mir,
-              'shlakozhuk',
-              k.x,
-              k.y + BOSS.vysota + 0.5,
-              zerno + this.vypushcheno,
-            ),
+            new Vrag(this.mir, 'obrezok', k.x, k.y + BOSS.vysota + 0.5, zerno + this.vypushcheno),
           );
           this.vypushcheno++;
-          this.sobytiya.push('выпущен Шлакожук');
+          this.sobytiya.push('выпущен Обрезок');
         }
       } else {
         k.otkryt = false;
