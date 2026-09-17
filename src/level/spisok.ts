@@ -6,6 +6,7 @@ import { UROVEN_1_3 } from './urovni/1-3';
 import { UROVEN_1_4 } from './urovni/1-4';
 import { UROVEN_1_5 } from './urovni/1-5';
 import { UROVEN_1_6 } from './urovni/1-6';
+import { UROVEN_1_7 } from './urovni/1-7';
 
 export const UROVNI: Uroven[] = [
   UROVEN_1_1,
@@ -14,6 +15,7 @@ export const UROVNI: Uroven[] = [
   UROVEN_1_4,
   UROVEN_1_5,
   UROVEN_1_6,
+  UROVEN_1_7,
 ];
 
 export function urovenPoId(id: string): Uroven | undefined {

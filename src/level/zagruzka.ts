@@ -150,7 +150,10 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       verh: o.y,
       skorost: o.skorost ?? 1,
       zaderzhka: o.zaderzhka ?? 2,
-      aktivna: false,
+      aktivna:
+        o.tip === 'lava' || o.tip === 'ship' || o.tip === 'voda'
+          ? !(o.vyklyuchena ?? false)
+          : false,
       sobrana: false,
       otrezki: [],
       zvenya: [],

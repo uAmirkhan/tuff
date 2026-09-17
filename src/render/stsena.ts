@@ -1,5 +1,6 @@
 // Отрисовка мира в PixiJS: многоугольники уровня, объекты, контур тела по частицам.
 import { Application, Graphics } from 'pixi.js';
+import type { TroynoyKotyol } from '../game/boss';
 import type { Telo } from '../game/telo';
 import type { Vrag } from '../game/vrag';
 import type { Uroven } from '../level/format';
@@ -56,6 +57,7 @@ export class Stsena {
     alpha: number,
     ur: ZagruzhennyyUroven | null,
     vragi: Vrag[] = [],
+    boss: TroynoyKotyol | null = null,
   ): void {
     const g = this.g;
     g.clear();
@@ -77,9 +79,30 @@ export class Stsena {
           y = this.ekY(s.y);
         switch (s.tip) {
           case 'lava':
+            if (!s.aktivna) break;
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);
             g.fill({ color: 0xff7a1a, alpha: 0.85 });
             break;
+          case 'kotyol': {
+            const m = this.masshtab;
+            const k = boss?.kotly[boss.sushchnosti.filter((q) => q.tip === 'kotyol').indexOf(s)];
+            const zhiv = k ? k.zhiv : true;
+            const otkryt = k ? k.otkryt : false;
+            g.rect(x - 1.1 * m, y - 2.0 * m, 2.2 * m, 2.0 * m);
+            g.fill({ color: zhiv ? 0x3b2f2a : 0x2a2422 });
+            g.stroke({ width: 3, color: zhiv ? 0x8a6a4a : 0x555555 });
+            g.rect(x - 0.7 * m, y - 2.1 * m, 1.4 * m, 0.25 * m);
+            g.fill({ color: otkryt ? 0xff7a1a : zhiv ? 0x6a5a4a : 0x333333 });
+            if (!otkryt && zhiv) {
+              g.rect(x - 0.9 * m, y - 2.3 * m, 1.8 * m, 0.2 * m);
+              g.fill({ color: 0x9a8a7a });
+            }
+            if (otkryt) {
+              g.circle(x, y - 2.5 * m, 0.3 * m);
+              g.fill({ color: 0xffd23f, alpha: 0.8 });
+            }
+            break;
+          }
           case 'obval': {
             // поднимающийся обвал: столб от низа уровня до текущего верха
             const niz = ur.dannye.granicy.minY - 2;

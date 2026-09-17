@@ -151,7 +151,14 @@ async function start(): Promise<void> {
     }
     telo.schitatCentr();
     stsena.sledit(telo.cx, telo.cy, ur?.dannye.granicy ?? null);
-    stsena.risovat(mir, [telo, ...statisty], nakoplen / MIR.shag, ur, igra?.vragi ?? []);
+    stsena.risovat(
+      mir,
+      [telo, ...statisty],
+      nakoplen / MIR.shag,
+      ur,
+      igra?.vragi ?? [],
+      igra?.boss ?? null,
+    );
     risovatUi();
     kadrov++;
     if (now - fpsT > 500) {

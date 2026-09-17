@@ -29,6 +29,7 @@ export type TipObekta =
   | 'plita' // нажимная плита, поле cel
   | 'rychag' // рычаг, поле cel
   | 'zaslonka' // дверь, открывается по ссылке
+  | 'kotyol' // босс мира 1: котёл, x центр, y низ
   | 'obval' // погоня: снизу поднимается лавовый обвал, касание = смерть; x,w ширина, y начало верха
   | 'cep' // цепь между двумя якорями (x,y)-(x2,y2) или висящая с одного; поля zvenyev, prochnost
   | 'shlakozhuk' // враг: ползёт и жжёт холодом
@@ -43,6 +44,7 @@ export interface Obekt {
   h?: number;
   cel?: string; // id объекта, который переключает плита или рычаг
   nuzhnaKorka?: boolean; // плита срабатывает только под Коркой
+  vyklyuchena?: boolean; // зона (лава) выключена до срабатывания рычага или плиты с cel на неё
   fiksiruetsya?: boolean; // плита остаётся нажатой (по умолчанию да); false = держит только под весом
   x2?: number; // второй якорь цепи
   y2?: number;
@@ -65,6 +67,7 @@ export interface Uroven {
   platformy?: Platforma[];
   obekty: Obekt[];
   vremyaZvezdy?: number; // секунды на вторую звезду там, где нет сердце-камней
+  vyhodPosleBossa?: boolean; // выход открывается только после победы над боссом
 }
 
 export const SVOYSTVA_MATERIALA: Record<Material, { trenie: number; sherohovat: 0 | 1 }> = {
