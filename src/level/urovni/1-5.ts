@@ -125,7 +125,8 @@ export const UROVEN_1_5: Uroven = {
       y2: 2.7,
       zvenyev: 18,
       prochnost: 'slabaya',
-      razryv: 0.07, // обычное тело растягивает этот мост на 4%, Корка на 9,5% (scripts/most2.ts)
+      zapas: 1.0, // натянутая цепь: нагрузка растягивает сильнее, разница между телом и Коркой заметнее
+      razryv: 0.09, // калибровка scripts/most2b.ts
     },
     { tip: 'zharkamenSredniy', x: 21.5, y: 3.4 },
     { tip: 'iskropryg', id: 'v-1', x: 20, y: 0.6 },

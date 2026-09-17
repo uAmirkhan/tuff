@@ -47,7 +47,8 @@ export interface Obekt {
   y2?: number;
   zvenyev?: number; // число звеньев цепи
   prochnost?: 'slabaya' | 'prochnaya'; // слабая рвётся под Коркой
-  razryv?: number; // явный порог растяжения цепи, калибруется scripts/most2.ts под геометрию моста
+  razryv?: number; // явный порог растяжения цепи, калибруется scripts/most2b.ts под геометрию моста
+  zapas?: number; // длина дуги к прямой: 1.0 натянутая цепь (нагрузка сильно растягивает), 1.06 провисшая
 }
 
 export interface Uroven {
