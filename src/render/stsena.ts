@@ -147,15 +147,16 @@ export class Stsena {
                 b = mir.sB[sv] as number;
               g.moveTo(this.ekX(mir.x[a] as number), this.ekY(mir.y[a] as number));
               g.lineTo(this.ekX(mir.x[b] as number), this.ekY(mir.y[b] as number));
-              g.stroke({ width: 3, color: 0x9a8a7a });
+              g.stroke({ width: 5, color: 0xb08a5a });
             }
             for (const q of s.zvenya) {
               g.circle(
                 this.ekX(mir.x[q] as number),
                 this.ekY(mir.y[q] as number),
-                0.11 * this.masshtab,
+                0.12 * this.masshtab,
               );
-              g.fill({ color: 0x7a6a5a });
+              g.fill({ color: 0xc9a36b });
+              g.stroke({ width: 1.5, color: 0x3a2a20 });
             }
             break;
           }
@@ -202,20 +203,45 @@ export class Stsena {
             }
             break;
           }
-          case 'vyhod':
+          case 'vyhod': {
+            // выход: тёплое пульсирующее кольцо со свечением, чтобы цель уровня читалась издалека
+            const puls = 0.5 + 0.5 * Math.sin(performance.now() / 400);
+            g.circle(x, y, (0.7 + 0.1 * puls) * this.masshtab);
+            g.fill({ color: 0xfff1a8, alpha: 0.12 + 0.1 * puls });
             g.circle(x, y, 0.5 * this.masshtab);
-            g.stroke({ width: 3, color: 0xfff1a8 });
+            g.stroke({ width: 4, color: 0xfff1a8, alpha: 0.9 });
+            g.circle(x, y, 0.38 * this.masshtab);
+            g.stroke({ width: 2, color: 0xffd23f, alpha: 0.5 + 0.5 * puls });
             break;
+          }
           case 'zharkamen':
           case 'zharkamenSredniy':
           case 'serdce':
           case 'ugolek':
             if (!s.sobrana) {
-              const r = s.tip === 'serdce' ? 0.3 : s.tip === 'zharkamenSredniy' ? 0.2 : 0.14;
-              g.circle(x, y, r * this.masshtab);
-              g.fill({
-                color: s.tip === 'ugolek' ? 0xff4d1a : s.tip === 'serdce' ? 0xff3366 : 0xffd23f,
-              });
+              if (s.tip === 'serdce') {
+                // сердце: тёплый самоцвет-ромб с бликом, тусклее героя, силуэтом отличен от угольков
+                const k = 0.28 * this.masshtab;
+                g.moveTo(x, y - k * 1.15);
+                g.lineTo(x + k, y);
+                g.lineTo(x, y + k * 1.15);
+                g.lineTo(x - k, y);
+                g.closePath();
+                g.fill({ color: 0xe86a7a });
+                g.moveTo(x, y - k * 1.15);
+                g.lineTo(x + k, y);
+                g.lineTo(x, y + k * 1.15);
+                g.lineTo(x - k, y);
+                g.closePath();
+                g.stroke({ width: 2, color: 0x5a1a24 });
+                g.moveTo(x - k * 0.35, y - k * 0.35);
+                g.lineTo(x, y - k * 0.75);
+                g.stroke({ width: 2, color: 0xfff1d6, alpha: 0.9 });
+              } else {
+                const r = s.tip === 'zharkamenSredniy' ? 0.2 : 0.14;
+                g.circle(x, y, r * this.masshtab);
+                g.fill({ color: s.tip === 'ugolek' ? 0xff4d1a : 0xffd23f });
+              }
             }
             break;
           case 'plita':
@@ -261,7 +287,7 @@ export class Stsena {
       }
       g.closePath();
       g.fill({ color: v.tip === 'iskropryg' ? 0x5a7a9a : 0x4a5a6a });
-      g.stroke({ width: 2, color: 0x9fc4e0, alpha: 0.7 });
+      g.stroke({ width: 3, color: 0xbfe0f4, alpha: 0.95 });
       v.schitatCentr();
       const ex = this.ekX(v.cx) + v.napravlenie * this.masshtab * 0.12;
       const ey = this.ekY(v.cy) - this.masshtab * 0.05;
