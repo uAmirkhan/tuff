@@ -418,7 +418,7 @@ async function start(): Promise<void> {
       cx: telo.cx,
       cy: telo.cy,
       nam: { ...vvod.nam },
-      sost: telo.sost,
+      sost: telo.sostoyanie,
       tach: vvod.tachAktiven,
     };
   });
