@@ -235,11 +235,12 @@ let taktMs = 0;
 function risovatUi(): void {
   ui.clear();
   if (chisto) return;
-  if (estKasanie || vvod.tachAktiven) for (const b of vvod.geometriyaKnopok()) {
-    const aktivna = vvod.nam[b.k] as boolean;
-    ui.circle(b.x, b.y, b.r);
-    ui.fill({ color: aktivna ? 0xffb347 : 0xffffff, alpha: aktivna ? 0.6 : 0.18 });
-  }
+  if (estKasanie || vvod.tachAktiven)
+    for (const b of vvod.geometriyaKnopok()) {
+      const aktivna = vvod.nam[b.k] as boolean;
+      ui.circle(b.x, b.y, b.r);
+      ui.fill({ color: aktivna ? 0xffb347 : 0xffffff, alpha: aktivna ? 0.6 : 0.18 });
+    }
   const s = vvod.stik;
   if (s.aktiven) {
     ui.circle(s.x0, s.y0, 48);
@@ -364,7 +365,8 @@ async function start(): Promise<void> {
         ? `${t(yazyk, 'vremya')} ${(igra.takty / 60).toFixed(1)}  ${t(yazyk, 'vysota')} ${igra.maksVysota.toFixed(1)}  ${t(yazyk, 'padenie')} ${igra.dlinneysheePadenie.toFixed(1)}`
         : `${t(yazyk, 'zhar')} ${igra.zhar.toFixed(0)}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/3  ${t(yazyk, 'smerti')} ${igra.smerti}`
       : '';
-    if (!chisto) hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
+    if (!chisto)
+      hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
   });
 }
 
