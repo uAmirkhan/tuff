@@ -1,0 +1,1137 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.11.0",
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "infinite": false,
+  "width": 16,
+  "height": 48,
+  "tilewidth": 32,
+  "tileheight": 32,
+  "nextlayerid": 3,
+  "nextobjectid": 44,
+  "tilesets": [],
+  "layers": [
+    {
+      "id": 1,
+      "name": "poligony",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 1536,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -1536
+            },
+            {
+              "x": 0,
+              "y": -1536
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "",
+          "class": "bazalt",
+          "x": 480,
+          "y": 1536,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -1536
+            },
+            {
+              "x": 0,
+              "y": -1536
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 64,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 512,
+              "y": 0
+            },
+            {
+              "x": 512,
+              "y": -64
+            },
+            {
+              "x": 0,
+              "y": -64
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 1536,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 512,
+              "y": 0
+            },
+            {
+              "x": 512,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "",
+          "class": "bazalt",
+          "x": 32,
+          "y": 1507.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "",
+          "class": "bazalt",
+          "x": 83.2,
+          "y": 1478.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "",
+          "class": "bazalt",
+          "x": 134.4,
+          "y": 1449.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "name": "",
+          "class": "bazalt",
+          "x": 185.6,
+          "y": 1420.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "",
+          "class": "bazalt",
+          "x": 236.8,
+          "y": 1392,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "",
+          "class": "bazalt",
+          "x": 288,
+          "y": 1363.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "",
+          "class": "bazalt",
+          "x": 339.2,
+          "y": 1334.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "",
+          "class": "bazalt",
+          "x": 390.4,
+          "y": 1305.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "",
+          "class": "bazalt",
+          "x": 256,
+          "y": 979.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": -19.2
+            },
+            {
+              "x": 0,
+              "y": -19.2
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "name": "",
+          "class": "bazalt",
+          "x": 204.8,
+          "y": 1123.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "name": "",
+          "class": "bazalt",
+          "x": 153.6,
+          "y": 1094.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "name": "",
+          "class": "bazalt",
+          "x": 102.4,
+          "y": 1065.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "name": "",
+          "class": "bazalt",
+          "x": 51.2,
+          "y": 1036.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 1008,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "name": "",
+          "class": "bazalt",
+          "x": -51.2,
+          "y": 979.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "name": "",
+          "class": "bazalt",
+          "x": -102.4,
+          "y": 950.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "name": "",
+          "class": "bazalt",
+          "x": -153.6,
+          "y": 921.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "name": "",
+          "class": "bazalt",
+          "x": 70.4,
+          "y": 595.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": -19.2
+            },
+            {
+              "x": 0,
+              "y": -19.2
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "name": "",
+          "class": "bazalt",
+          "x": 256,
+          "y": 739.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "name": "",
+          "class": "bazalt",
+          "x": 307.2,
+          "y": 710.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "name": "",
+          "class": "bazalt",
+          "x": 358.4,
+          "y": 681.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "name": "",
+          "class": "bazalt",
+          "x": 409.6,
+          "y": 652.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 27,
+          "name": "",
+          "class": "bazalt",
+          "x": 460.8,
+          "y": 624,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "name": "",
+          "class": "bazalt",
+          "x": 512,
+          "y": 595.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "name": "",
+          "class": "bazalt",
+          "x": 563.2,
+          "y": 566.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "name": "",
+          "class": "bazalt",
+          "x": 614.4,
+          "y": 537.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": 0
+            },
+            {
+              "x": 51.2,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 31,
+          "name": "",
+          "class": "bazalt",
+          "x": 256,
+          "y": 211.2,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": 0
+            },
+            {
+              "x": 185.6,
+              "y": -19.2
+            },
+            {
+              "x": 0,
+              "y": -19.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "obekty",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 32,
+          "name": "start",
+          "class": "start",
+          "x": 64,
+          "y": 1305.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 33,
+          "name": "obval",
+          "class": "obval",
+          "x": 0,
+          "y": 1472,
+          "width": 512,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "skorost",
+              "type": "float",
+              "value": 1.15
+            },
+            {
+              "name": "zaderzhka",
+              "type": "int",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "name": "i-start",
+          "class": "ispytanie",
+          "x": 96,
+          "y": 1312,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 35,
+          "name": "g-start",
+          "class": "gorn",
+          "x": 80,
+          "y": 1324.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 36,
+          "name": "",
+          "class": "zharkamen",
+          "x": 192,
+          "y": 1216,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 37,
+          "name": "",
+          "class": "zharkamen",
+          "x": 352,
+          "y": 1120,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 38,
+          "name": "g-2",
+          "class": "gorn",
+          "x": 384,
+          "y": 940.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 39,
+          "name": "",
+          "class": "zharkamen",
+          "x": 192,
+          "y": 816,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 40,
+          "name": "s-vetka",
+          "class": "serdce",
+          "x": 432,
+          "y": 768,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 41,
+          "name": "g-3",
+          "class": "gorn",
+          "x": 96,
+          "y": 556.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 42,
+          "name": "",
+          "class": "zharkamen",
+          "x": 320,
+          "y": 416,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 43,
+          "name": "v",
+          "class": "vyhod",
+          "x": 416,
+          "y": 166.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        }
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "name": "id",
+      "type": "string",
+      "value": "1-6"
+    },
+    {
+      "name": "nazvanie",
+      "type": "string",
+      "value": "Прорыв"
+    },
+    {
+      "name": "mysl",
+      "type": "string",
+      "value": "Погоня: обвал снизу, бежать вверх по ступеням, лезть по стенам с Вязкостью, не останавливаться"
+    },
+    {
+      "name": "vremyaZvezdy",
+      "type": "int",
+      "value": 75
+    },
+    {
+      "name": "minX",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "minY",
+      "type": "int",
+      "value": -6
+    },
+    {
+      "name": "maxX",
+      "type": "int",
+      "value": 16
+    },
+    {
+      "name": "maxY",
+      "type": "int",
+      "value": 42
+    }
+  ]
+}
