@@ -50,6 +50,8 @@ describe('сторожа тела', () => {
     mir.y[a] = mir.y[b] as number;
     mir.x[b] = ax;
     mir.y[b] = ay;
-    expect(telo.storozha()).not.toBeNull();
+    let rez: string | null = null;
+    for (let t = 0; t < 25 && !rez; t++) rez = telo.storozha();
+    expect(rez).not.toBeNull();
   });
 });

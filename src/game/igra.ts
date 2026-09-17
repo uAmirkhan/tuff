@@ -16,7 +16,8 @@ export type Sobytie =
   | { tip: 'slomano'; poligon: number }
   | { tip: 'storozh'; prichina: string }
   | { tip: 'vragUbit'; kem: 'korka' | 'sreda' }
-  | { tip: 'uronOtVraga' };
+  | { tip: 'uronOtVraga' }
+  | { tip: 'cepPorvana'; id: string };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -124,6 +125,7 @@ export class Igra {
           const nazhata =
             g.maxX > s.x - 0.5 && g.minX < s.x + 0.5 && g.minY < s.y + 0.3 && g.maxY > s.y;
           const godna = nazhata && (!s.nuzhnaKorka || this.telo.vKorke);
+          if (s.fiksiruetsya && s.aktivna) break; // зафиксирована: не отпускается
           if (godna !== s.aktivna) {
             s.aktivna = godna;
             this.pereklyuchit(s.cel, godna);
@@ -178,6 +180,13 @@ export class Igra {
       if (v.zhar <= 0) {
         v.umeret();
         this.sobytiya.push({ tip: 'vragUbit', kem: kasanie ? 'korka' : 'sreda' });
+      }
+    }
+    // Порванные цепи: событие по сущности
+    if (this.mir.porvano.length) {
+      for (const sv of this.mir.porvano) {
+        const cep = this.ur.sushchnosti.find((s) => s.tip === 'cep' && s.svyazi.includes(sv));
+        if (cep) this.sobytiya.push({ tip: 'cepPorvana', id: cep.id });
       }
     }
     // Хрупкие многоугольники: сломан один отрезок, рушится весь

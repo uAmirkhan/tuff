@@ -174,10 +174,14 @@ export class Telo {
     const m = this.mir;
     if (nam.vyazkost && !nam.rasplav) {
       for (let i = this.ot; i < this.ot + this.n; i++) {
-        if (!m.kontakt[i] || m.vPoTochke[i] !== -1) continue;
-        const ny = Math.abs(m.kontNy[i] as number);
-        const porog = ny >= KOSINUS_45 ? TELO.vyazkostPorogPol : TELO.vyazkostPorogStena;
-        m.prilepit(i, porog);
+        if (m.vPoTochke[i] !== -1) continue;
+        if (m.kontakt[i]) {
+          const ny = Math.abs(m.kontNy[i] as number);
+          const porog = ny >= KOSINUS_45 ? TELO.vyazkostPorogPol : TELO.vyazkostPorogStena;
+          m.prilepit(i, porog);
+        } else if ((m.kontaktZveno[i] as number) !== -1) {
+          m.prilepitKChastice(i, m.kontaktZveno[i] as number, TELO.vyazkostPorogPol);
+        }
       }
     }
     // защита от заклинивания: окно смещений центра масс
@@ -189,13 +193,19 @@ export class Telo {
   // Сторожа тела: взрыв (периметр вырос втрое), выворачивание (знак площади), самопересечение
   // соседних рёбер. Возвращает причину или null. Восстанавливает форму в текущем центре.
   private perimetrPokoya = 0;
+  private samoperesTaktov = 0;
   storozha(): string | null {
     if (this.perimetrPokoya === 0) this.perimetrPokoya = this.perimetr();
     let prichina: string | null = null;
     if (this.perimetr() > this.perimetrPokoya * 3) prichina = 'взрыв: периметр втрое';
     else if (this.ploshchad() < 0) prichina = 'выворачивание: площадь отрицательна';
-    else if (this.samoperesechenie()) prichina = 'самопересечение контура';
+    else if (this.samoperesechenie()) {
+      // короткие самопересечения при тычке врага или в щели проходят сами; сброс только если держится
+      this.samoperesTaktov++;
+      if (this.samoperesTaktov > 20) prichina = 'самопересечение контура 20 тактов';
+    } else this.samoperesTaktov = 0;
     if (prichina) {
+      this.samoperesTaktov = 0;
       this.schitatCentr();
       this.vosstanovit(this.cx, this.cy, prichina);
     }
