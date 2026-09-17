@@ -10,6 +10,7 @@ export const MAX_KONTUROV = 256;
 export const SETKA = 2; // размер ячейки сетки отрезков в единицах
 export const MAX_YACHEEK = 65536;
 const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
+const MAKS_RAZVEDENIE = 0.04; // предел разведения двух тел за подшаг
 const GLUBINA = 0.5; // глубина по умолчанию, с которой односторонний отрезок выталкивает сидящую внутри частицу
 
 export interface ParametryMira {
@@ -475,7 +476,33 @@ export class Mir {
   readonly kontaktTelKontur = new Int32Array(MAX_TOCHEK); // индекс контура, которого коснулись
   readonly udarTel = new Float64Array(MAX_KONTUROV); // импульс, полученный контуром от других тел за такт
 
+  // описанные прямоугольники контуров, считаются один раз на подшаг
+  private readonly cMinX = new Float64Array(MAX_KONTUROV);
+  private readonly cMaxX = new Float64Array(MAX_KONTUROV);
+  private readonly cMinY = new Float64Array(MAX_KONTUROV);
+  private readonly cMaxY = new Float64Array(MAX_KONTUROV);
   private kontaktyTel(): void {
+    if (this.c < 2) return;
+    for (let a = 0; a < this.c; a++) {
+      let a0 = Infinity,
+        a1 = -Infinity,
+        a2 = Infinity,
+        a3 = -Infinity;
+      const ot = this.cOt[a] as number,
+        n = this.cN[a] as number;
+      for (let i = 0; i < n; i++) {
+        const x = this.x[ot + i] as number,
+          y = this.y[ot + i] as number;
+        if (x < a0) a0 = x;
+        if (x > a1) a1 = x;
+        if (y < a2) a2 = y;
+        if (y > a3) a3 = y;
+      }
+      this.cMinX[a] = a0;
+      this.cMaxX[a] = a1;
+      this.cMinY[a] = a2;
+      this.cMaxY[a] = a3;
+    }
     for (let a = 0; a < this.c; a++) {
       for (let b = 0; b < this.c; b++) {
         if (a === b) continue;
@@ -601,36 +628,13 @@ export class Mir {
   }
 
   private konturyRyadom(a: number, b: number): boolean {
-    let a0 = Infinity,
-      a1 = -Infinity,
-      a2 = Infinity,
-      a3 = -Infinity;
-    const otA = this.cOt[a] as number,
-      nA = this.cN[a] as number;
-    for (let i = 0; i < nA; i++) {
-      const x = this.x[otA + i] as number,
-        y = this.y[otA + i] as number;
-      if (x < a0) a0 = x;
-      if (x > a1) a1 = x;
-      if (y < a2) a2 = y;
-      if (y > a3) a3 = y;
-    }
-    let b0 = Infinity,
-      b1 = -Infinity,
-      b2 = Infinity,
-      b3 = -Infinity;
-    const otB = this.cOt[b] as number,
-      nB = this.cN[b] as number;
-    for (let i = 0; i < nB; i++) {
-      const x = this.x[otB + i] as number,
-        y = this.y[otB + i] as number;
-      if (x < b0) b0 = x;
-      if (x > b1) b1 = x;
-      if (y < b2) b2 = y;
-      if (y > b3) b3 = y;
-    }
     const z = 0.15;
-    return a0 - z < b1 && a1 + z > b0 && a2 - z < b3 && a3 + z > b2;
+    return (
+      (this.cMinX[a] as number) - z < (this.cMaxX[b] as number) &&
+      (this.cMaxX[a] as number) + z > (this.cMinX[b] as number) &&
+      (this.cMinY[a] as number) - z < (this.cMaxY[b] as number) &&
+      (this.cMaxY[a] as number) + z > (this.cMinY[b] as number)
+    );
   }
 
   vnutriKontura(ot: number, n: number, x: number, y: number): boolean {
@@ -700,7 +704,9 @@ export class Mir {
       nx /= d;
       ny /= d;
     }
-    // если частица внутри чужого контура, нормаль ребра должна смотреть наружу от него
+    // разведение за подшаг ограничено: глубокое взаимопроникновение расходится за несколько подшагов,
+    // а не одним рывком сквозь тело (фазз 17.09: враг внутри героя выворачивал контур)
+    if (pen > MAKS_RAZVEDENIE) pen = MAKS_RAZVEDENIE;
     const wp = 1 / (this.massa[p] as number);
     const w1 = 1 / (this.massa[q1] as number),
       w2 = 1 / (this.massa[q2] as number);

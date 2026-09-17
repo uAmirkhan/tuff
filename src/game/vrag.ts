@@ -13,6 +13,7 @@ export class Vrag {
   zhar: number;
   zhiv = true;
   napravlenie = 1;
+  kasaetsya = false; // касается героя в этом такте: вцепился, не давит дальше
   private pryzhokTakt = 0;
   private sluchay: number;
   cx = 0;
@@ -81,7 +82,7 @@ export class Vrag {
     this.napravlenie = dx > 0 ? 1 : -1;
     // 7 тактов из 8 идёт целенаправленно, иначе замирает
     if ((takt & 7) === 7) return;
-    if (this.naZemle()) {
+    if (this.naZemle() && !this.kasaetsya) {
       for (let i = this.ot; i < this.ot + this.n; i++)
         m.px[i] = (m.px[i] as number) - this.napravlenie * k.tyaga;
       // Искропрыг иногда прыгает, если игрок выше или далеко
