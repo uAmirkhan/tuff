@@ -6,6 +6,7 @@ export const MAX_TOCHEK = 2048;
 export const MAX_SVYAZEY = 8192;
 export const MAX_OTREZKOV = 4096;
 export const MAX_VREMENNYH = 512;
+export const MAX_KONTUROV = 256;
 
 export interface ParametryMira {
   shag: number;
@@ -42,6 +43,7 @@ export class Mir {
   readonly sZhest = new Float64Array(MAX_SVYAZEY);
   readonly sKazhdyy = new Int32Array(MAX_SVYAZEY); // релаксировать на каждом k-м подшаге
   readonly sZhiva = new Uint8Array(MAX_SVYAZEY);
+  readonly sOdnostor = new Uint8Array(MAX_SVYAZEY); // 1 = связь только не даёт сблизиться ближе длины
 
   // Статические отрезки уровня
   k = 0;
@@ -52,6 +54,10 @@ export class Mir {
   readonly oTrenie = new Float64Array(MAX_OTREZKOV);
   readonly oSherohovat = new Uint8Array(MAX_OTREZKOV); // 1 = Вязкость держит
   readonly oZhiv = new Uint8Array(MAX_OTREZKOV);
+  readonly oOdnostor = new Uint8Array(MAX_OTREZKOV); // 1 = твёрдая сторона справа по ходу p1→p2, свободная слева
+  readonly hrupkost = new Float64Array(MAX_OTREZKOV); // 0 = неразрушим, иначе порог импульса удара
+  readonly udar = new Float64Array(MAX_OTREZKOV); // накопленный импульс удара за такт
+  slomano: number[] = [];
 
   // Временные связи Вязкости: частица к точке на отрезке
   v = 0;
@@ -62,6 +68,17 @@ export class Mir {
   readonly vZhiva = new Uint8Array(MAX_VREMENNYH);
   readonly vPoTochke = new Int32Array(MAX_TOCHEK); // индекс живой связи для частицы или -1
 
+  // Замкнутые контуры с ограничением площади (объём мягкого тела)
+  c = 0;
+  readonly cOt = new Int32Array(MAX_KONTUROV);
+  readonly cN = new Int32Array(MAX_KONTUROV);
+  readonly cPloshchad = new Float64Array(MAX_KONTUROV); // целевая площадь
+  readonly cZhest = new Float64Array(MAX_KONTUROV);
+  readonly cKazhdyy = new Int32Array(MAX_KONTUROV);
+  private readonly gradX = new Float64Array(MAX_TOCHEK);
+  private readonly gradY = new Float64Array(MAX_TOCHEK);
+
+  vyazkostZhestkost = 0.5; // доля расстояния до якоря, снимаемая за подшаг
   takt = 0;
   zhurnal: string[] = [];
   otbrosheno = 0;
@@ -105,9 +122,12 @@ export class Mir {
     this.sZhest[i] = zhest;
     this.sKazhdyy[i] = kazhdyy;
     this.sZhiva[i] = 1;
+    this.sOdnostor[i] = 0;
     return i;
   }
 
+  // Отрезок односторонний: свободная сторона слева по ходу от p1 к p2 (нормаль (-ey, ex)).
+  // Двусторонний (odnostor = 0) для тонких платформ, у которых обе стороны свободны.
   dobavitOtrezok(
     x1: number,
     y1: number,
@@ -115,6 +135,7 @@ export class Mir {
     y2: number,
     trenie = 1,
     sherohovat = 1,
+    odnostor = 1,
   ): number {
     const i = this.k++;
     if (i >= MAX_OTREZKOV) throw new Error('переполнение отрезков');
@@ -125,6 +146,9 @@ export class Mir {
     this.oTrenie[i] = trenie;
     this.oSherohovat[i] = sherohovat;
     this.oZhiv[i] = 1;
+    this.hrupkost[i] = 0;
+    this.udar[i] = 0;
+    this.oOdnostor[i] = odnostor;
     return i;
   }
 
@@ -175,6 +199,58 @@ export class Mir {
     return slot;
   }
 
+  dobavitKontur(ot: number, n: number, zhest: number, kazhdyy = 1): number {
+    const i = this.c++;
+    if (i >= MAX_KONTUROV) throw new Error('переполнение контуров');
+    this.cOt[i] = ot;
+    this.cN[i] = n;
+    this.cPloshchad[i] = this.ploshchadKontura(ot, n);
+    this.cZhest[i] = zhest;
+    this.cKazhdyy[i] = kazhdyy;
+    return i;
+  }
+
+  ploshchadKontura(ot: number, n: number): number {
+    let s = 0;
+    for (let i = 0; i < n; i++) {
+      const a = ot + i,
+        b = ot + ((i + 1) % n);
+      s +=
+        (this.x[a] as number) * (this.y[b] as number) -
+        (this.x[b] as number) * (this.y[a] as number);
+    }
+    return s / 2;
+  }
+
+  // Ограничение площади: контур тянется к целевой площади (PBD)
+  private ploshchadi(sub: number): void {
+    for (let c = 0; c < this.c; c++) {
+      const k = this.cKazhdyy[c] as number;
+      if (k > 1 && sub % k !== 0) continue;
+      const ot = this.cOt[c] as number,
+        n = this.cN[c] as number;
+      const C = this.ploshchadKontura(ot, n) - (this.cPloshchad[c] as number);
+      let summa = 0;
+      for (let i = 0; i < n; i++) {
+        const prev = ot + ((i + n - 1) % n),
+          next = ot + ((i + 1) % n);
+        const gx = 0.5 * ((this.y[next] as number) - (this.y[prev] as number));
+        const gy = 0.5 * ((this.x[prev] as number) - (this.x[next] as number));
+        this.gradX[ot + i] = gx;
+        this.gradY[ot + i] = gy;
+        summa += (gx * gx + gy * gy) / (this.massa[ot + i] as number);
+      }
+      if (summa === 0) continue;
+      const lambda = (-C / summa) * (this.cZhest[c] as number);
+      for (let i = 0; i < n; i++) {
+        const p = ot + i;
+        const w = 1 / (this.massa[p] as number);
+        this.x[p] = (this.x[p] as number) + lambda * w * (this.gradX[p] as number);
+        this.y[p] = (this.y[p] as number) + lambda * w * (this.gradY[p] as number);
+      }
+    }
+  }
+
   razorvatVremennuyu(j: number): void {
     if (!this.vZhiva[j]) return;
     this.vZhiva[j] = 0;
@@ -213,10 +289,21 @@ export class Mir {
     }
     // 2. Подшаги
     const ps = this.p.podshagov;
+    for (let o = 0; o < this.k; o++) this.udar[o] = 0;
     for (let sub = 0; sub < ps; sub++) {
       this.relaksatsiya(sub);
+      this.ploshchadi(sub);
       this.vremennye();
       this.kontakty();
+    }
+    // 3. Хрупкие отрезки: суммарный импульс удара за такт выше порога ломает
+    this.slomano.length = 0;
+    for (let o = 0; o < this.k; o++) {
+      const h = this.hrupkost[o] as number;
+      if (h > 0 && this.oZhiv[o] && (this.udar[o] as number) > h) {
+        this.ubratOtrezok(o);
+        this.slomano.push(o);
+      }
     }
     this.takt++;
   }
@@ -232,6 +319,7 @@ export class Mir {
       const dy = (this.y[b] as number) - (this.y[a] as number);
       const d = Math.sqrt(dx * dx + dy * dy);
       if (d === 0) continue;
+      if (this.sOdnostor[j] && d >= (this.sDlina[j] as number)) continue;
       const raz = (d - (this.sDlina[j] as number)) / d;
       const ma = this.massa[a] as number,
         mb = this.massa[b] as number;
@@ -271,18 +359,20 @@ export class Mir {
         this.razorvatVremennuyu(j);
         continue;
       }
-      this.x[i] = (this.x[i] as number) + dx * 0.5;
-      this.y[i] = (this.y[i] as number) + dy * 0.5;
+      // упругий якорь: тянет к точке долей за подшаг; при сильном растяжении рвётся
+      this.x[i] = (this.x[i] as number) + dx * this.vyazkostZhestkost;
+      this.y[i] = (this.y[i] as number) + dy * this.vyazkostZhestkost;
     }
   }
 
   private kontakty(): void {
     for (let i = 0; i < this.n; i++) {
-      const x = this.x[i] as number,
-        y = this.y[i] as number,
-        r = this.radius[i] as number;
+      const r = this.radius[i] as number;
       for (let o = 0; o < this.k; o++) {
         if (!this.oZhiv[o]) continue;
+        // позиция читается заново на каждом отрезке: прошлый отрезок мог её сдвинуть
+        const x = this.x[i] as number,
+          y = this.y[i] as number;
         const x1 = this.oX1[o] as number,
           y1 = this.oY1[o] as number;
         const ex = (this.oX2[o] as number) - x1,
@@ -296,6 +386,34 @@ export class Mir {
           sny = ex / l0;
         const sPrev = (pxi - x1) * snx + (pyi - y1) * sny;
         const sNow = (x - x1) * snx + (y - y1) * sny;
+        if (this.oOdnostor[o]) {
+          // односторонний: всё, что ближе радиуса к свободной стороне или ушло в твёрдую, наружу
+          if (sNow < r && sNow > -0.5) {
+            const u = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+            if (u >= 0 && u <= 1) {
+              const pen = r - sNow;
+              this.x[i] = x + snx * pen;
+              this.y[i] = y + sny * pen;
+              this.udar[o] =
+                (this.udar[o] as number) + Math.max(0, pen) * (this.massa[i] as number);
+              const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
+              const vx = (this.x[i] as number) - pxi;
+              const vy = (this.y[i] as number) - pyi;
+              const vt = vx * -sny + vy * snx;
+              const maxGas = mu * Math.max(0, pen);
+              const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
+              this.x[i] = (this.x[i] as number) - -sny * gas;
+              this.y[i] = (this.y[i] as number) - snx * gas;
+              this.kontakt[i] = 1;
+              this.kontNx[i] = snx;
+              this.kontNy[i] = sny;
+              this.kontOtrezok[i] = o;
+              this.kontX[i] = x1 + ex * u;
+              this.kontY[i] = y1 + ey * u;
+            }
+          }
+          continue;
+        }
         if (sPrev * sNow < 0 && Math.abs(sPrev) > 1e-9) {
           const tt = sPrev / (sPrev - sNow);
           const ix = pxi + (x - pxi) * tt,
@@ -305,6 +423,7 @@ export class Mir {
             const zn = sPrev > 0 ? 1 : -1;
             this.x[i] = ix + snx * r * zn;
             this.y[i] = iy + sny * r * zn;
+            this.udar[o] = (this.udar[o] as number) + Math.abs(sNow) * (this.massa[i] as number);
             this.kontakt[i] = 1;
             this.kontNx[i] = snx * zn;
             this.kontNy[i] = sny * zn;
@@ -345,6 +464,7 @@ export class Mir {
         // выталкивание
         this.x[i] = x + nx * pen;
         this.y[i] = y + ny * pen;
+        this.udar[o] = (this.udar[o] as number) + pen * (this.massa[i] as number);
         // трение Кулона: тангенциальное смещение за такт гасится не больше чем на mu*pen
         const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
         const vx = (this.x[i] as number) - (this.px[i] as number);

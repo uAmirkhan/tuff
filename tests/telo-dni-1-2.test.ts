@@ -65,14 +65,18 @@ describe('тело, дни 1-2', () => {
         taktMin = t;
       }
     }
-    // прогон заново до такта максимального сжатия плюс 60 тактов
+    // прогон заново до такта максимального сжатия плюс 60 тактов:
+    // площадь и высота вернулись к покою, тело не осталось блином
     const s = stsena(10);
+    const pl0 = s.telo.ploshchad();
     takt(s.mir, s.telo, taktMin + 60);
     const g = s.telo.gabarity();
     const pokoy = stsena(0.2);
     takt(pokoy.mir, pokoy.telo, 240);
     const gp = pokoy.telo.gabarity();
-    expect(Math.abs(g.h / g.w - gp.h / gp.w)).toBeLessThan(0.15);
+    expect(s.telo.ploshchad()).toBeGreaterThan(pl0 * 0.85);
+    expect(g.h).toBeGreaterThan(gp.h * 0.7);
+    expect(g.h).toBeLessThan(gp.h * 1.4);
   });
 
   it('симуляция детерминирована', () => {

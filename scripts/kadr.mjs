@@ -1,6 +1,7 @@
 // Снимок кадра спайка: открыть страницу, подождать, нажать клавиши, снять PNG.
 import { chromium } from '../../mars-colony/node_modules/playwright/index.mjs';
-const [,, out = 'kadry/kadr.png', scenario = ''] = process.argv;
+
+const [, , out = 'kadry/kadr.png', scenario = ''] = process.argv;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
 page.on('console', (m) => console.log('[console]', m.text()));

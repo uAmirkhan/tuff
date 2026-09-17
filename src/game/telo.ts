@@ -1,7 +1,7 @@
 // Тело героя: кольцо частиц в мире и четыре способности как параметры.
 
 import type { Mir } from '../physics/mir';
-import { TELO } from './config/telo';
+import { MIR, TELO } from './config/telo';
 
 export interface Namerenie {
   dx: number; // -1..1
@@ -32,6 +32,7 @@ export class Telo {
   readonly n: number;
   readonly svyaziCentr: number[] = [];
   readonly svyaziKolco: number[] = [];
+  readonly kontur: number;
   private vybrosByl = false;
   private korkaByla = false;
   // защита от заклинивания
@@ -68,15 +69,26 @@ export class Telo {
       this.svyaziKolco.push(
         mir.dobavitSvyaz(a, this.ot + ((i + 1) % this.n), TELO.kolco.zhestkost, TELO.kolco.kazhdyy),
       );
-      this.svyaziKolco.push(
-        mir.dobavitSvyaz(a, this.ot + ((i + 2) % this.n), TELO.kolco.zhestkost, TELO.kolco.kazhdyy),
+      const b2 = this.ot + ((i + 2) % this.n);
+      const hx = (mir.x[b2] as number) - (mir.x[a] as number);
+      const hy = (mir.y[b2] as number) - (mir.y[a] as number);
+      const horda = Math.sqrt(hx * hx + hy * hy);
+      const s2 = mir.dobavitSvyaz(
+        a,
+        b2,
+        TELO.kolcoCherezOdnogo.zhestkost,
+        TELO.kolcoCherezOdnogo.kazhdyy,
+        horda * TELO.kolcoCherezOdnogo.dolya,
       );
+      mir.sOdnostor[s2] = 1;
+      this.svyaziKolco.push(s2);
       if (i < this.n / 2) {
         this.svyaziCentr.push(
           mir.dobavitSvyaz(a, this.ot + i + this.n / 2, TELO.centr.zhestkost, TELO.centr.kazhdyy),
         );
       }
     }
+    this.kontur = mir.dobavitKontur(this.ot, this.n, TELO.obyom.zhestkost, TELO.obyom.kazhdyy);
   }
 
   // Применить намерение к параметрам частиц и связей. Вызывать до mir.shag().
@@ -99,6 +111,24 @@ export class Telo {
     this.vybrosByl = nam.vybros;
     // Расплав рвёт Вязкость
     if (nam.rasplav || !nam.vyazkost) m.otlepitVse(this.ot, this.ot + this.n);
+    // Ползание: якоря прилипших точек сдвигаются вдоль опоры по вводу
+    if (nam.vyazkost && (nam.dx !== 0 || nam.dy !== 0)) {
+      const shag = TELO.polzanie * MIR.shag;
+      for (let i = this.ot; i < this.ot + this.n; i++) {
+        const j = m.vPoTochke[i] as number;
+        if (j === -1) continue;
+        const o = m.vOtrezok[j] as number;
+        const ex = (m.oX2[o] as number) - (m.oX1[o] as number);
+        const ey = (m.oY2[o] as number) - (m.oY1[o] as number);
+        const l2 = ex * ex + ey * ey;
+        if (l2 === 0) continue;
+        const proj = (nam.dx * ex + nam.dy * ey) / l2; // доля длины отрезка на единицу ввода
+        let d = (m.vDolya[j] as number) + proj * shag;
+        if (d < 0) d = 0;
+        else if (d > 1) d = 1;
+        m.vDolya[j] = d;
+      }
+    }
     // Движение: прямая добавка скорости через сдвиг прошлой позиции
     const tx = nam.dx * TELO.tyagaGorizont;
     const ty = nam.dy > 0 ? nam.dy * TELO.tyagaVverh : nam.dy * TELO.tyagaVniz;
@@ -108,14 +138,18 @@ export class Telo {
       m.px[i] = (m.px[i] as number) - tx;
       m.py[i] = (m.py[i] as number) - ty;
     }
-    if (this.vKontakte()) {
+    // Вращение вдоль опоры: по полу и потолку всегда, по стене только с Вязкостью,
+    // иначе тело перелезает стены одним трением (спайк, 17.09).
+    const opora = this.opora();
+    const spinDolya = nam.vyazkost ? 1 : opora;
+    if (spinDolya > 0) {
       // касательная к окружности тела в точке частицы, знак от ввода dx
       for (let i = this.ot; i < this.ot + this.n; i++) {
         const rx = (m.x[i] as number) - cx,
           ry = (m.y[i] as number) - cy;
         const l = Math.sqrt(rx * rx + ry * ry) || 1;
         // вправо = по часовой: касательная (ry, -rx)
-        const s = nam.dx * TELO.spin;
+        const s = nam.dx * TELO.spin * spinDolya;
         m.px[i] = (m.px[i] as number) - (ry / l) * s;
         m.py[i] = (m.py[i] as number) + (rx / l) * s;
       }
@@ -148,6 +182,17 @@ export class Telo {
       sy += m.y[i] as number;
     }
     return [sx / this.n, sy / this.n];
+  }
+
+  // Доля «горизонтальной» опоры: 1 на полу или потолке, 0 на вертикальной стене, 0 без контакта
+  opora(): number {
+    let maks = 0;
+    for (let i = this.ot; i < this.ot + this.n; i++) {
+      if (!this.mir.kontakt[i]) continue;
+      const ny = Math.abs(this.mir.kontNy[i] as number);
+      if (ny > maks) maks = ny;
+    }
+    return maks;
   }
 
   vKontakte(): boolean {
