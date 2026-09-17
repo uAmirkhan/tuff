@@ -9,7 +9,7 @@ const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
 // множители силы потока по материалу героя: Расплав парусит, Корка почти не летит
 const POTOK = { rasplav: 1.8, korka: 0.15, konteyner: 0.6 };
-const UZEL = { takty: 180, radiusVstrechi: 3 }; // узел теплотрассы: 3 секунды Вязкости; встреча с баком в 3 диаметрах
+const UZEL = { takty: 180, radius: 1.5, radiusVstrechi: 3 }; // узел: 3 секунды Вязкости в полутора диаметрах; встреча с баком в 3
 
 import { ZHAR } from './config/zhar';
 import type { Namerenie, Telo } from './telo';
@@ -268,7 +268,7 @@ export class Igra {
         case 'uzel':
           // зажигание: Вязкость рядом с горном узла UZEL.takty подряд, отрыв сбрасывает быстрее, чем копит
           if (!s.aktivna) {
-            if (nam.vyazkost && d < ZHAR.radiusGorna) s.zaryad++;
+            if (nam.vyazkost && d < UZEL.radius) s.zaryad++;
             else s.zaryad = Math.max(0, s.zaryad - 3);
             if (s.zaryad >= UZEL.takty) {
               s.aktivna = true;
