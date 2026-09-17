@@ -229,7 +229,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       s.kontur = mir.dobavitKontur(s.chasticy[0] as number, 4, KONTEYNER.obyom, 1);
       if (o.tip === 'mayatnik') {
         // якорь и цепь вниз, последнее звено держит оба верхних угла
-        const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 1);
+        const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 0);
         mir.gravMul[a] = 0;
         const raz = o.razryv ?? CEP.razryv[o.prochnost ?? 'prochnaya'];
         let prev = a;
@@ -256,7 +256,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       const raz = o.razryv ?? CEP.razryv[o.prochnost ?? 'prochnaya'];
       const dvaYakorya = o.x2 !== undefined;
       // якорь A: неподвижная частица огромной массы
-      const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 1);
+      const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 0);
       mir.gravMul[a] = 0;
       let prev = a;
       // мост провисает по параболе: дуга длиннее прямой в zapas раз, звенья не сжаты и не растянуты
@@ -284,7 +284,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
         prev = q;
       }
       if (dvaYakorya) {
-        const b = mir.dobavitTochku(x2, y2, CEP.massaYakorya, 0.02, 1, 1);
+        const b = mir.dobavitTochku(x2, y2, CEP.massaYakorya, 0.02, 1, 0);
         mir.gravMul[b] = 0;
         const sv = mir.dobavitSvyaz(prev, b, CEP.zhestkost, 1);
         mir.sRazryv[sv] = raz;

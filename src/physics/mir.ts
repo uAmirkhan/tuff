@@ -11,6 +11,7 @@ export const SETKA = 2; // размер ячейки сетки отрезков
 export const MAX_YACHEEK = 65536;
 const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
 const KASANIE = 0.003; // зазор, в пределах которого частица считается касающейся отрезка
+const NEUPRUGOST = 0.8; // доля разведения тел, которая не переходит в скорость
 const MAKS_RAZVEDENIE = 0.04; // предел разведения двух тел за подшаг
 const ZAPAS_TEL = 0.15; // запас вокруг прямоугольника контура при проверке близости тел
 const GLUBINA = 0.5; // глубина по умолчанию, с которой односторонний отрезок выталкивает сидящую внутри частицу
@@ -633,29 +634,54 @@ export class Mir {
             this.ottolknutOtRebra(p, otB, nB, x, y, r, b);
             continue;
           }
-          // внутри чужого контура: вытолкнуть через ближайшее ребро
+          // внутри чужого контура: вытолкнуть через ребро, которое частица пересекла за такт
+          // (по прошлой позиции), иначе через ближайшее. Ближайшее ребро у дна контейнера
+          // это его дно: частица героя вдавливалась в пол и тело складывалось (грабли, BRIEF)
           let luchshe = -1,
             dmin = Infinity;
-          for (let j = 0; j < nB; j++) {
-            const q1 = otB + j,
-              q2 = otB + ((j + 1) % nB);
-            const d = rasstoyanieDoOtrezka(
-              x,
-              y,
-              this.x[q1] as number,
-              this.y[q1] as number,
-              this.x[q2] as number,
-              this.y[q2] as number,
-            );
-            if (d < dmin) {
-              dmin = d;
-              luchshe = j;
+          const pxp = this.px[p] as number,
+            pyp = this.py[p] as number;
+          if (!this.vnutriKontura(otB, nB, pxp, pyp)) {
+            for (let j = 0; j < nB; j++) {
+              const q1 = otB + j,
+                q2 = otB + ((j + 1) % nB);
+              const ax = this.x[q1] as number,
+                ay = this.y[q1] as number;
+              const bx = this.x[q2] as number,
+                by = this.y[q2] as number;
+              // пересечение отрезка (px,py)-(x,y) с ребром (a,b)
+              const d1 = (bx - ax) * (pyp - ay) - (by - ay) * (pxp - ax);
+              const d2 = (bx - ax) * (y - ay) - (by - ay) * (x - ax);
+              const d3 = (x - pxp) * (ay - pyp) - (y - pyp) * (ax - pxp);
+              const d4 = (x - pxp) * (by - pyp) - (y - pyp) * (bx - pxp);
+              if (d1 * d2 < 0 && d3 * d4 < 0) {
+                luchshe = j;
+                dmin = rasstoyanieDoOtrezka(x, y, ax, ay, bx, by);
+                break;
+              }
             }
           }
+          if (luchshe === -1)
+            for (let j = 0; j < nB; j++) {
+              const q1 = otB + j,
+                q2 = otB + ((j + 1) % nB);
+              const d = rasstoyanieDoOtrezka(
+                x,
+                y,
+                this.x[q1] as number,
+                this.y[q1] as number,
+                this.x[q2] as number,
+                this.y[q2] as number,
+              );
+              if (d < dmin) {
+                dmin = d;
+                luchshe = j;
+              }
+            }
           if (luchshe === -1) continue;
           const q1 = otB + luchshe,
             q2 = otB + ((luchshe + 1) % nB);
-          this.razvesti(p, q1, q2, x, y, dmin + r, b);
+          this.razvesti(p, q1, q2, x, y, dmin + r, b, true);
         }
       }
     }
@@ -793,6 +819,7 @@ export class Mir {
     y: number,
     pen: number,
     b: number,
+    vnutri = false, // частица внутри чужого контура (наружу через ребро) или снаружи у ребра (от ребра)
   ): void {
     const x1 = this.x[q1] as number,
       y1 = this.y[q1] as number;
@@ -804,13 +831,16 @@ export class Mir {
     else if (t > 1) t = 1;
     const cx = x1 + ex * t,
       cy = y1 + ey * t;
-    let nx = x - cx,
-      ny = y - cy;
+    // частица внутри чужого контура: наружу значит от частицы к ребру и дальше. Раньше нормаль
+    // шла от ребра к частице, то есть внутрь: тело засасывало в контейнер, врага в героя (грабли)
+    let nx = vnutri ? cx - x : x - cx,
+      ny = vnutri ? cy - y : y - cy;
     const d = Math.sqrt(nx * nx + ny * ny);
     if (d < 1e-9) {
+      // частица на самом ребре: наружная нормаль контура, обход против часовой, наружу справа
       const l = Math.sqrt(el) || 1;
-      nx = -ey / l;
-      ny = ex / l;
+      nx = ey / l;
+      ny = -ex / l;
     } else {
       nx /= d;
       ny /= d;
@@ -831,6 +861,15 @@ export class Mir {
     this.y[q1] = (this.y[q1] as number) - ny * dq * (1 - t);
     this.x[q2] = (this.x[q2] as number) - nx * dq * t;
     this.y[q2] = (this.y[q2] as number) - ny * dq * t;
+    // контакт почти неупругий: большая часть разведения не становится скоростью, иначе
+    // лёгкий контейнер выстреливает от касания вдвое быстрее героя (грабли, BRIEF)
+    const k = NEUPRUGOST;
+    this.px[p] = (this.px[p] as number) + nx * dp * k;
+    this.py[p] = (this.py[p] as number) + ny * dp * k;
+    this.px[q1] = (this.px[q1] as number) - nx * dq * (1 - t) * k;
+    this.py[q1] = (this.py[q1] as number) - ny * dq * (1 - t) * k;
+    this.px[q2] = (this.px[q2] as number) - nx * dq * t * k;
+    this.py[q2] = (this.py[q2] as number) - ny * dq * t * k;
     this.kontaktTel[p] = 1;
     this.kontaktTelKontur[p] = b;
     this.kontaktTelChastica[p] = q1;
