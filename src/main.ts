@@ -264,6 +264,7 @@ async function start(): Promise<void> {
     analitika.sobytie('platform_error', { tekst: String(e) });
   }
   menyuKnopka.textContent = t(yazyk, 'urovni');
+  (document.getElementById('menyu-zagolovok') as HTMLElement).textContent = t(yazyk, 'mir1');
   menyuZakryt.textContent = t(yazyk, 'igrat');
   knopkaDalshe.textContent = t(yazyk, 'dalshe');
   knopkaEshche.textContent = t(yazyk, 'eshche');
@@ -332,8 +333,8 @@ async function start(): Promise<void> {
     const g = telo.gabarity();
     const sostoyanie = igra
       ? tekushchiy.rezhim === 'zherlo'
-        ? `время ${(igra.takty / 60).toFixed(1)} с  высота ${igra.maksVysota.toFixed(1)}  падение ${igra.dlinneysheePadenie.toFixed(1)}`
-        : `жар ${igra.zhar.toFixed(0)}  очки ${igra.ochki}  сердца ${igra.serdca}/3  смерти ${igra.smerti}${igra.gotovo ? '  УРОВЕНЬ ПРОЙДЕН' : ''}`
+        ? `${t(yazyk, 'vremya')} ${(igra.takty / 60).toFixed(1)}  ${t(yazyk, 'vysota')} ${igra.maksVysota.toFixed(1)}  ${t(yazyk, 'padenie')} ${igra.dlinneysheePadenie.toFixed(1)}`
+        : `${t(yazyk, 'zhar')} ${igra.zhar.toFixed(0)}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/3  ${t(yazyk, 'smerti')} ${igra.smerti}`
       : '';
     hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
   });
