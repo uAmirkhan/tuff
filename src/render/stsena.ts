@@ -6,6 +6,7 @@ import type { Vrag } from '../game/vrag';
 import type { Uroven } from '../level/format';
 import type { ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
+import { Fon } from './fon';
 
 const TSVET_MATERIALA: Record<string, number> = {
   bazalt: 0x4a3a34,
@@ -16,17 +17,21 @@ const TSVET_MATERIALA: Record<string, number> = {
 
 export class Stsena {
   readonly app = new Application();
-  readonly fon = new Graphics();
+  readonly fon = new Fon();
+  readonly kray = new Graphics(); // кромки поверхностей и текстура
   readonly g = new Graphics();
   masshtab = 60; // пикселей на единицу
+  readonly pokazannye = new Set<string>(); // способности, которые игрок уже применил
+  readonly znachki: { x: number; y: number; tekst: string }[] = [];
   kamX = 0;
   kamY = 2;
 
   async init(): Promise<void> {
     await this.app.init({ background: '#1a1418', resizeTo: window, antialias: true });
     document.body.appendChild(this.app.canvas);
-    this.app.stage.addChild(this.fon);
+    this.app.stage.addChild(this.fon.konteyner);
     this.app.stage.addChild(this.g);
+    this.app.stage.addChild(this.kray);
     this.masshtab = Math.max(40, Math.min(70, this.app.screen.height / 9));
   }
 
@@ -62,6 +67,10 @@ export class Stsena {
   ): void {
     const g = this.g;
     g.clear();
+    this.kray.clear();
+    this.znachki.length = 0;
+    this.fon.postroit(this.app.screen.width, this.app.screen.height);
+    this.fon.obnovit(this.kamX, this.kamY, this.masshtab);
     // многоугольники уровня
     if (ur) {
       for (let pi = 0; pi < ur.dannye.poligony.length; pi++) {
@@ -73,6 +82,49 @@ export class Stsena {
           g.lineTo(this.ekX(t[i]?.[0] ?? 0), this.ekY(t[i]?.[1] ?? 0));
         g.closePath();
         g.fill({ color: TSVET_MATERIALA[p.material ?? 'bazalt'] ?? 0x4a3a34 });
+        // кромка: светлая полоса по верхним рёбрам, чтобы тело читало опору; лёд блестит
+        const k = this.kray;
+        const led = p.material === 'lyod';
+        for (let i = 0; i < t.length; i++) {
+          const a = t[i] as [number, number];
+          const b = t[(i + 1) % t.length] as [number, number];
+          if (Math.abs(a[1] - b[1]) > 0.01 && !led) continue; // только горизонтальные рёбра
+          k.moveTo(this.ekX(a[0]), this.ekY(a[1]));
+          k.lineTo(this.ekX(b[0]), this.ekY(b[1]));
+        }
+        k.stroke({ width: led ? 3 : 2, color: led ? 0xcfe9f7 : 0x7a5a48, alpha: led ? 0.9 : 0.55 });
+        // трещины базальта: детерминированные штрихи внутри многоугольника
+        if (!led && p.material !== 'hrupkiy') {
+          const x0 = Math.min(...t.map((q) => q[0])),
+            x1 = Math.max(...t.map((q) => q[0]));
+          const y0 = Math.min(...t.map((q) => q[1])),
+            y1 = Math.max(...t.map((q) => q[1]));
+          const sh = Math.max(1, Math.floor((x1 - x0) * (y1 - y0) * 0.35));
+          let z = pi * 7919 + 13;
+          for (let s = 0; s < Math.min(sh, 60); s++) {
+            z = (z * 1103515245 + 12345) & 0x7fffffff;
+            const fx = x0 + (((z >> 8) % 1000) / 1000) * (x1 - x0);
+            z = (z * 1103515245 + 12345) & 0x7fffffff;
+            const fy = y0 + (((z >> 8) % 1000) / 1000) * (y1 - y0);
+            z = (z * 1103515245 + 12345) & 0x7fffffff;
+            const dl = 0.15 + ((z >> 8) % 100) / 400;
+            k.moveTo(this.ekX(fx), this.ekY(fy));
+            k.lineTo(this.ekX(fx + dl), this.ekY(fy - dl * 0.4));
+          }
+          k.stroke({ width: 1, color: 0x2a1c18, alpha: 0.7 });
+        }
+        if (p.material === 'hrupkiy') {
+          // хрупкое: сетка трещин крест-накрест
+          const x0 = Math.min(...t.map((q) => q[0])),
+            x1 = Math.max(...t.map((q) => q[0]));
+          const y0 = Math.min(...t.map((q) => q[1])),
+            y1 = Math.max(...t.map((q) => q[1]));
+          for (let x = x0 + 0.5; x < x1; x += 1) {
+            k.moveTo(this.ekX(x), this.ekY(y0));
+            k.lineTo(this.ekX(x + 0.2), this.ekY(y1));
+          }
+          k.stroke({ width: 1.5, color: 0xffb347, alpha: 0.5 });
+        }
       }
       // объекты
       for (const s of ur.sushchnosti) {
@@ -150,6 +202,29 @@ export class Stsena {
                 0.11 * this.masshtab,
               );
               g.fill({ color: 0x7a6a5a });
+            }
+            break;
+          }
+          case 'ispytanie': {
+            // значок обучения: иконка способности над препятствием, пока её не применили (02-gdd, раздел 13)
+            const sp =
+              s.id.includes('vyazk') || s.id.includes('stena') || s.id.includes('potolok')
+                ? 'J'
+                : s.id.includes('shaht') || s.id.includes('plita')
+                  ? 'L'
+                  : s.id.includes('trub')
+                    ? 'K'
+                    : s.id.includes('ustup')
+                      ? '␣'
+                      : '';
+            if (sp && !this.pokazannye.has(sp)) {
+              const m = this.masshtab;
+              const qy = y - 1.6 * m + Math.sin(performance.now() / 300) * 4;
+              g.roundRect(x - 0.35 * m, qy - 0.35 * m, 0.7 * m, 0.7 * m, 8);
+              g.fill({ color: 0xfff1d6, alpha: 0.9 });
+              g.roundRect(x - 0.35 * m, qy - 0.35 * m, 0.7 * m, 0.7 * m, 8);
+              g.stroke({ width: 2, color: 0xff8c3a });
+              this.znachki.push({ x, y: qy, tekst: sp });
             }
             break;
           }
