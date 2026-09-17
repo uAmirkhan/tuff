@@ -3,7 +3,7 @@ import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
 import { TroynoyKotyol } from './boss';
 import { MIR } from './config/telo';
-import { BOY, VRAGI } from './config/vragi';
+import { BOY, SEMEYSTVA, VODA_ZASTYVANIE, VRAGI } from './config/vragi';
 
 const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
@@ -61,7 +61,7 @@ export class Igra {
     this.chekpoint = [ur.dannye.start[0], ur.dannye.start[1]];
     let zerno = 7;
     for (const s of ur.sushchnosti) {
-      if (s.tip === 'obrezok' || s.tip === 'skachok') {
+      if (s.tip === 'obrezok' || s.tip === 'skachok' || s.tip === 'uborshchik') {
         this.vragi.push(new Vrag(mir, s.tip, s.x, s.y, zerno++));
       }
     }
@@ -88,6 +88,21 @@ export class Igra {
       if (!z.aktivna) continue;
       if (z.tip === 'voda') {
         const verh = z.y + z.h;
+        // враги в воде вязнут: сопротивление как у контейнеров, без подъёма
+        for (const v of this.vragi) {
+          if (!v.zhiv) continue;
+          for (let p = v.ot; p < v.ot + v.n; p++) {
+            const x = mir.x[p] as number,
+              y = mir.y[p] as number;
+            if (x < z.x || x > z.x + z.w || y > verh || y < z.y) continue;
+            mir.px[p] =
+              (mir.px[p] as number) +
+              ((mir.x[p] as number) - (mir.px[p] as number)) * VODA_SOPROTIVLENIE * 3;
+            mir.py[p] =
+              (mir.py[p] as number) +
+              ((mir.y[p] as number) - (mir.py[p] as number)) * VODA_SOPROTIVLENIE * 3;
+          }
+        }
         for (const s of this.ur.sushchnosti) {
           if (s.chasticy.length === 0 || s.plavuchest === 0) continue;
           for (const p of s.chasticy) {
@@ -307,7 +322,7 @@ export class Igra {
         if (this.telo.vKorke && BOY.korkaZashchishchaet) {
           const udar = this.mir.udarTel[v.kontur] as number;
           if (udar > BOY.porogDavleniya) v.zhar -= BOY.uronDavleniya;
-        } else {
+        } else if (k.uronIgroku > 0 && !v.vyklyuchen) {
           this.zhar -= k.uronIgroku;
           this.prichinaUrona = 'враг';
           this.sobytiya.push({ tip: 'uronOtVraga' });
@@ -325,7 +340,13 @@ export class Igra {
               : s.tip === 'ship'
                 ? ZHAR.uronShipov
                 : ZHAR.uronVody;
-          v.zhar -= bazovyy * BOY.sredaMnozhitel;
+          const sem = SEMEYSTVA[v.tip];
+          if (s.tip === 'voda' && (sem.zamykaetVVode || sem.zastyvaetVVode)) {
+            // вода не убивает, а выключает: дрон замыкает сразу, обрезок застывает через две секунды;
+            // оба остаются в мире как опора
+            if (sem.zamykaetVVode) v.vyklyuchen = true;
+            if (sem.zastyvaetVVode && ++v.vVodeTaktov >= VODA_ZASTYVANIE) v.vyklyuchen = true;
+          } else v.zhar -= bazovyy * BOY.sredaMnozhitel;
         }
       }
       if (v.zhar <= 0) {

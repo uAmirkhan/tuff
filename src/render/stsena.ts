@@ -489,14 +489,39 @@ export class Stsena {
         else g.lineTo(this.ekX(x), this.ekY(y));
       }
       g.closePath();
-      g.fill({ color: v.tip === 'skachok' ? 0x5a7a9a : 0x4a5a6a });
-      g.stroke({ width: 3, color: 0xbfe0f4, alpha: 0.95 });
+      const dron = v.tip === 'uborshchik';
+      g.fill({
+        color: v.vyklyuchen
+          ? 0x55595f
+          : dron
+            ? 0x6a6f7a
+            : v.tip === 'skachok'
+              ? 0x5a7a9a
+              : 0x4a5a6a,
+      });
+      g.stroke({
+        width: 3,
+        color: v.vyklyuchen ? 0x8a8f9a : dron ? 0x9aa0ad : 0xbfe0f4,
+        alpha: 0.95,
+      });
       v.schitatCentr();
       const ex = this.ekX(v.cx) + v.napravlenie * this.masshtab * 0.12;
       const ey = this.ekY(v.cy) - this.masshtab * 0.05;
-      g.circle(ex - 5, ey, 3);
-      g.circle(ex + 5, ey, 3);
-      g.fill({ color: 0xdff4ff });
+      if (dron) {
+        // одна лампа-глаз спереди и щётка по ходу
+        g.circle(ex + v.napravlenie * 6, ey, 4);
+        g.fill({ color: v.vyklyuchen ? 0x777777 : 0xffd23f });
+        const sx = this.ekX(v.cx) + v.napravlenie * this.masshtab * 0.5;
+        for (let i = 0; i < 4; i++) {
+          g.moveTo(sx, this.ekY(v.cy) + i * 3 - 2);
+          g.lineTo(sx + v.napravlenie * 8, this.ekY(v.cy) + i * 3);
+        }
+        g.stroke({ width: 2, color: 0xc9a36b, alpha: 0.9 });
+      } else {
+        g.circle(ex - 5, ey, 3);
+        g.circle(ex + 5, ey, 3);
+        g.fill({ color: v.vyklyuchen ? 0x999999 : 0xdff4ff });
+      }
     }
     // призрак лучшей попытки: полупрозрачный контур
     if (prizrak) {
