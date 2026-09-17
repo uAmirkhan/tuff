@@ -30,7 +30,18 @@ export interface Sushchnost {
   period: number;
   faza: number;
   pauza: number;
+  chasticy: number[]; // углы твёрдого контейнера (контур)
+  kontur: number; // индекс контура контейнера или -1
 }
+
+export const KONTEYNER = {
+  massa: 2.0, // полная масса по умолчанию: половина массы героя
+  zhestkost: 0.9,
+  obyom: 0.5,
+  radius: 0.05,
+  trenie: 0.6,
+  dempfer: 0.995,
+};
 
 export const CEP: {
   radiusZvena: number;
@@ -73,6 +84,32 @@ function ploshchad(t: [number, number][]): number {
     s += a[0] * b[1] - b[0] * a[1];
   }
   return s / 2;
+}
+
+// Твёрдый контейнер w×h с центром (cx, cy): углы против часовой от левого нижнего, шесть связей
+export function postroitKonteyner(
+  mir: Mir,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  massa: number,
+): number[] {
+  const hw = w / 2,
+    hh = h / 2,
+    m = massa / 4;
+  const k = KONTEYNER;
+  const ugly = [
+    mir.dobavitTochku(cx - hw, cy - hh, m, k.radius, k.trenie, k.dempfer),
+    mir.dobavitTochku(cx + hw, cy - hh, m, k.radius, k.trenie, k.dempfer),
+    mir.dobavitTochku(cx + hw, cy + hh, m, k.radius, k.trenie, k.dempfer),
+    mir.dobavitTochku(cx - hw, cy + hh, m, k.radius, k.trenie, k.dempfer),
+  ];
+  for (let i = 0; i < 4; i++)
+    mir.dobavitSvyaz(ugly[i] as number, ugly[(i + 1) % 4] as number, k.zhestkost, 1);
+  mir.dobavitSvyaz(ugly[0] as number, ugly[2] as number, k.zhestkost, 1);
+  mir.dobavitSvyaz(ugly[1] as number, ugly[3] as number, k.zhestkost, 1);
+  return ugly;
 }
 
 export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
@@ -173,7 +210,45 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       period: o.period ?? 4,
       faza: o.faza ?? 0,
       pauza: o.pauza ?? 0,
+      chasticy: [],
+      kontur: -1,
     };
+    if (o.tip === 'yashchik' || o.tip === 'mayatnik') {
+      // контейнер: четыре угла со всеми связями и контуром площади, как тело врага
+      const w = o.w ?? 1,
+        h = o.h ?? 1;
+      const dlina = o.dlina ?? 2;
+      const n = Math.max(2, o.zvenyev ?? Math.max(2, Math.round(dlina / 0.3)));
+      const shag = dlina / n;
+      const radiusZvena = Math.max(CEP.radiusZvena, shag * 0.55);
+      // маятник: верх контейнера ниже последнего звена на радиус звена, иначе звено
+      // выталкивается из контура и раскачивает контейнер само
+      const cx = o.tip === 'yashchik' ? o.x + w / 2 : o.x;
+      const cy = o.tip === 'yashchik' ? o.y + h / 2 : o.y - dlina - radiusZvena - 0.02 - h / 2;
+      s.chasticy = postroitKonteyner(mir, cx, cy, w, h, o.massa ?? KONTEYNER.massa);
+      s.kontur = mir.dobavitKontur(s.chasticy[0] as number, 4, KONTEYNER.obyom, 1);
+      if (o.tip === 'mayatnik') {
+        // якорь и цепь вниз, последнее звено держит оба верхних угла
+        const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 1);
+        mir.gravMul[a] = 0;
+        const raz = o.razryv ?? CEP.razryv[o.prochnost ?? 'prochnaya'];
+        let prev = a;
+        for (let i = 1; i <= n; i++) {
+          const q = mir.dobavitTochku(o.x, o.y - shag * i, CEP.massaZvena, radiusZvena, 1, 0.995);
+          mir.sdelatTverdoy(q);
+          s.zvenya.push(q);
+          const sv = mir.dobavitSvyaz(prev, q, CEP.zhestkost, 1);
+          mir.sRazryv[sv] = raz;
+          s.svyazi.push(sv);
+          prev = q;
+        }
+        for (const ugol of [s.chasticy[3] as number, s.chasticy[2] as number]) {
+          const sv = mir.dobavitSvyaz(prev, ugol, CEP.zhestkost, 1);
+          mir.sRazryv[sv] = raz;
+          s.svyazi.push(sv);
+        }
+      }
+    }
     if (o.tip === 'cep') {
       const n = Math.max(2, o.zvenyev ?? 8);
       const x2 = o.x2 ?? o.x,

@@ -181,6 +181,9 @@ export class Telo {
           m.prilepit(i, porog);
         } else if ((m.kontaktZveno[i] as number) !== -1) {
           m.prilepitKChastice(i, m.kontaktZveno[i] as number, TELO.vyazkostPorogPol);
+        } else if (m.kontaktTel[i]) {
+          // касание другого тела (контейнер, маятник): липнем к его ближайшей частице и тянем
+          m.prilepitKChastice(i, m.kontaktTelChastica[i] as number, TELO.vyazkostPorogPol);
         }
       }
     }
