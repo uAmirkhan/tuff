@@ -314,11 +314,14 @@ export class Mir {
     // 2. Подшаги
     const ps = this.p.podshagov;
     for (let o = 0; o < this.k; o++) this.udar[o] = 0;
+    for (let c = 0; c < this.c; c++) this.udarTel[c] = 0;
+    for (let i = 0; i < this.n; i++) this.kontaktTel[i] = 0;
     for (let sub = 0; sub < ps; sub++) {
       this.relaksatsiya(sub);
       this.ploshchadi(sub);
       this.vremennye();
       this.kontakty();
+      this.kontaktyTel();
     }
     // 3. Хрупкие отрезки: суммарный импульс удара за такт выше порога ломает
     this.slomano.length = 0;
@@ -387,6 +390,179 @@ export class Mir {
       this.x[i] = (this.x[i] as number) + dx * this.vyazkostZhestkost;
       this.y[i] = (this.y[i] as number) + dy * this.vyazkostZhestkost;
     }
+  }
+
+  // Контакт контуров между собой: частица одного тела против рёбер другого, в обе стороны.
+  // Коррекция делится по обратным массам. Итог: тела не проходят друг сквозь друга.
+  readonly kontaktTel = new Uint8Array(MAX_TOCHEK); // 1 = частица касалась другого тела в такте
+  readonly kontaktTelKontur = new Int32Array(MAX_TOCHEK); // индекс контура, которого коснулись
+  readonly udarTel = new Float64Array(MAX_KONTUROV); // импульс, полученный контуром от других тел за такт
+
+  private kontaktyTel(): void {
+    for (let a = 0; a < this.c; a++) {
+      for (let b = 0; b < this.c; b++) {
+        if (a === b) continue;
+        // грубая проверка: пересекаются ли описанные прямоугольники
+        if (!this.konturyRyadom(a, b)) continue;
+        const otA = this.cOt[a] as number,
+          nA = this.cN[a] as number;
+        const otB = this.cOt[b] as number,
+          nB = this.cN[b] as number;
+        for (let i = 0; i < nA; i++) {
+          const p = otA + i;
+          const x = this.x[p] as number,
+            y = this.y[p] as number,
+            r = this.radius[p] as number;
+          if (!this.vnutriKontura(otB, nB, x, y)) {
+            // снаружи: проверяем близость к рёбрам
+            this.ottolknutOtRebra(p, otB, nB, x, y, r, b);
+            continue;
+          }
+          // внутри чужого контура: вытолкнуть через ближайшее ребро
+          let luchshe = -1,
+            dmin = Infinity;
+          for (let j = 0; j < nB; j++) {
+            const q1 = otB + j,
+              q2 = otB + ((j + 1) % nB);
+            const d = rasstoyanieDoOtrezka(
+              x,
+              y,
+              this.x[q1] as number,
+              this.y[q1] as number,
+              this.x[q2] as number,
+              this.y[q2] as number,
+            );
+            if (d < dmin) {
+              dmin = d;
+              luchshe = j;
+            }
+          }
+          if (luchshe === -1) continue;
+          const q1 = otB + luchshe,
+            q2 = otB + ((luchshe + 1) % nB);
+          this.razvesti(p, q1, q2, x, y, dmin + r, b);
+        }
+      }
+    }
+  }
+
+  private konturyRyadom(a: number, b: number): boolean {
+    let a0 = Infinity,
+      a1 = -Infinity,
+      a2 = Infinity,
+      a3 = -Infinity;
+    const otA = this.cOt[a] as number,
+      nA = this.cN[a] as number;
+    for (let i = 0; i < nA; i++) {
+      const x = this.x[otA + i] as number,
+        y = this.y[otA + i] as number;
+      if (x < a0) a0 = x;
+      if (x > a1) a1 = x;
+      if (y < a2) a2 = y;
+      if (y > a3) a3 = y;
+    }
+    let b0 = Infinity,
+      b1 = -Infinity,
+      b2 = Infinity,
+      b3 = -Infinity;
+    const otB = this.cOt[b] as number,
+      nB = this.cN[b] as number;
+    for (let i = 0; i < nB; i++) {
+      const x = this.x[otB + i] as number,
+        y = this.y[otB + i] as number;
+      if (x < b0) b0 = x;
+      if (x > b1) b1 = x;
+      if (y < b2) b2 = y;
+      if (y > b3) b3 = y;
+    }
+    const z = 0.15;
+    return a0 - z < b1 && a1 + z > b0 && a2 - z < b3 && a3 + z > b2;
+  }
+
+  vnutriKontura(ot: number, n: number, x: number, y: number): boolean {
+    let vn = false;
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = this.x[ot + i] as number,
+        yi = this.y[ot + i] as number;
+      const xj = this.x[ot + j] as number,
+        yj = this.y[ot + j] as number;
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) vn = !vn;
+    }
+    return vn;
+  }
+
+  private ottolknutOtRebra(
+    p: number,
+    otB: number,
+    nB: number,
+    x: number,
+    y: number,
+    r: number,
+    b: number,
+  ): void {
+    for (let j = 0; j < nB; j++) {
+      const q1 = otB + j,
+        q2 = otB + ((j + 1) % nB);
+      const d = rasstoyanieDoOtrezka(
+        x,
+        y,
+        this.x[q1] as number,
+        this.y[q1] as number,
+        this.x[q2] as number,
+        this.y[q2] as number,
+      );
+      if (d < r) this.razvesti(p, q1, q2, x, y, r - d, b);
+    }
+  }
+
+  // Развести частицу p и ребро (q1,q2) на глубину pen по нормали ребра в сторону p
+  private razvesti(
+    p: number,
+    q1: number,
+    q2: number,
+    x: number,
+    y: number,
+    pen: number,
+    b: number,
+  ): void {
+    const x1 = this.x[q1] as number,
+      y1 = this.y[q1] as number;
+    const ex = (this.x[q2] as number) - x1,
+      ey = (this.y[q2] as number) - y1;
+    const el = ex * ex + ey * ey;
+    let t = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+    const cx = x1 + ex * t,
+      cy = y1 + ey * t;
+    let nx = x - cx,
+      ny = y - cy;
+    const d = Math.sqrt(nx * nx + ny * ny);
+    if (d < 1e-9) {
+      const l = Math.sqrt(el) || 1;
+      nx = -ey / l;
+      ny = ex / l;
+    } else {
+      nx /= d;
+      ny /= d;
+    }
+    // если частица внутри чужого контура, нормаль ребра должна смотреть наружу от него
+    const wp = 1 / (this.massa[p] as number);
+    const w1 = 1 / (this.massa[q1] as number),
+      w2 = 1 / (this.massa[q2] as number);
+    const wq = (1 - t) * w1 + t * w2;
+    const w = wp + wq;
+    const dp = pen * (wp / w);
+    const dq = pen * (wq / w);
+    this.x[p] = (this.x[p] as number) + nx * dp;
+    this.y[p] = (this.y[p] as number) + ny * dp;
+    this.x[q1] = (this.x[q1] as number) - nx * dq * (1 - t);
+    this.y[q1] = (this.y[q1] as number) - ny * dq * (1 - t);
+    this.x[q2] = (this.x[q2] as number) - nx * dq * t;
+    this.y[q2] = (this.y[q2] as number) - ny * dq * t;
+    this.kontaktTel[p] = 1;
+    this.kontaktTelKontur[p] = b;
+    this.udarTel[b] = (this.udarTel[b] as number) + pen * (this.massa[p] as number);
   }
 
   private postroitSetku(): void {
@@ -626,4 +802,23 @@ export class Mir {
     this.kontX[i] = cx;
     this.kontY[i] = cy;
   }
+}
+
+function rasstoyanieDoOtrezka(
+  x: number,
+  y: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): number {
+  const ex = x2 - x1,
+    ey = y2 - y1;
+  const el = ex * ex + ey * ey;
+  let t = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+  if (t < 0) t = 0;
+  else if (t > 1) t = 1;
+  const dx = x - (x1 + ex * t),
+    dy = y - (y1 + ey * t);
+  return Math.sqrt(dx * dx + dy * dy);
 }

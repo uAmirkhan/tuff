@@ -3,8 +3,9 @@ import type { Uroven } from './format';
 import { UROVEN_1_1 } from './urovni/1-1';
 import { UROVEN_1_2 } from './urovni/1-2';
 import { UROVEN_1_3 } from './urovni/1-3';
+import { UROVEN_1_4 } from './urovni/1-4';
 
-export const UROVNI: Uroven[] = [UROVEN_1_1, UROVEN_1_2, UROVEN_1_3];
+export const UROVNI: Uroven[] = [UROVEN_1_1, UROVEN_1_2, UROVEN_1_3, UROVEN_1_4];
 
 export function urovenPoId(id: string): Uroven | undefined {
   return UROVNI.find((u) => u.id === id);
