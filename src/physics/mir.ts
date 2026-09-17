@@ -10,6 +10,7 @@ export const MAX_KONTUROV = 256;
 export const SETKA = 2; // размер ячейки сетки отрезков в единицах
 export const MAX_YACHEEK = 65536;
 const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
+const GLUBINA = 0.5; // глубина по умолчанию, с которой односторонний отрезок выталкивает сидящую внутри частицу
 
 export interface ParametryMira {
   shag: number;
@@ -58,6 +59,7 @@ export class Mir {
   readonly oSherohovat = new Uint8Array(MAX_OTREZKOV); // 1 = Вязкость держит
   readonly oZhiv = new Uint8Array(MAX_OTREZKOV);
   readonly oOdnostor = new Uint8Array(MAX_OTREZKOV); // 1 = твёрдая сторона справа по ходу p1→p2, свободная слева
+  readonly oGlubina = new Float64Array(MAX_OTREZKOV); // глубина выталкивания: у тонких плит меньше половины толщины
   readonly hrupkost = new Float64Array(MAX_OTREZKOV); // 0 = неразрушим, иначе порог импульса удара
   readonly udar = new Float64Array(MAX_OTREZKOV); // накопленный импульс удара за такт
   slomano: number[] = [];
@@ -168,6 +170,7 @@ export class Mir {
     this.hrupkost[i] = 0;
     this.udar[i] = 0;
     this.oOdnostor[i] = odnostor;
+    this.oGlubina[i] = GLUBINA;
     this.setkaGryaznaya = true;
     return i;
   }
@@ -526,13 +529,17 @@ export class Mir {
     const sNow = (x - x1) * snx + (y - y1) * sny;
     if (this.oOdnostor[o]) {
       // односторонний: всё, что ближе радиуса к свободной стороне или ушло в твёрдую, наружу
-      if (sNow < r && sNow > -0.5) {
+      // частица, которая в начале такта была снаружи, возвращается наружу с любой глубины;
+      // сидевшая внутри выталкивается только у самой грани, иначе тонкая плита ловит её обеими гранями
+      const byloSnaruzhi = sPrev >= r - 1e-6;
+      if (sNow < r && (byloSnaruzhi || sNow > -(this.oGlubina[o] as number))) {
         const u = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
         if (u >= 0 && u <= 1) {
           const pen = r - sNow;
           this.x[i] = x + snx * pen;
           this.y[i] = y + sny * pen;
-          this.udar[o] = (this.udar[o] as number) + Math.max(0, pen) * (this.massa[i] as number);
+          this.udar[o] =
+            (this.udar[o] as number) + Math.max(0, sPrev - sNow) * (this.massa[i] as number);
           const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
           const vx = (this.x[i] as number) - pxi;
           const vy = (this.y[i] as number) - pyi;
@@ -560,7 +567,8 @@ export class Mir {
         const zn = sPrev > 0 ? 1 : -1;
         this.x[i] = ix + snx * r * zn;
         this.y[i] = iy + sny * r * zn;
-        this.udar[o] = (this.udar[o] as number) + Math.abs(sNow) * (this.massa[i] as number);
+        this.udar[o] =
+          (this.udar[o] as number) + Math.abs(sPrev - sNow) * (this.massa[i] as number);
         this.kontakt[i] = 1;
         this.kontNx[i] = snx * zn;
         this.kontNy[i] = sny * zn;
@@ -601,7 +609,7 @@ export class Mir {
     // выталкивание
     this.x[i] = x + nx * pen;
     this.y[i] = y + ny * pen;
-    this.udar[o] = (this.udar[o] as number) + pen * (this.massa[i] as number);
+    this.udar[o] = (this.udar[o] as number) + Math.abs(sPrev - sNow) * (this.massa[i] as number);
     // трение Кулона: тангенциальное смещение за такт гасится не больше чем на mu*pen
     const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
     const vx = (this.x[i] as number) - (this.px[i] as number);

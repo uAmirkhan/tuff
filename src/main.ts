@@ -5,8 +5,14 @@ import { Igra } from './game/igra';
 import { Telo } from './game/telo';
 import { Vvod } from './input/vvod';
 import type { Uroven } from './level/format';
-import { UROVEN_1_1 } from './level/urovni/1-1';
+import { porogOchkov, sleduyushchiy, UROVNI, urovenPoId } from './level/spisok';
 import { type ZagruzhennyyUroven, zagruzitUroven } from './level/zagruzka';
+import {
+  HranilishcheBrauzera,
+  sohranitProgress,
+  zagruzitProgress,
+  zapisatRezultat,
+} from './meta/sohranenie';
 import { Mir } from './physics/mir';
 import { Stsena } from './render/stsena';
 
@@ -14,10 +20,61 @@ const params = new URLSearchParams(location.search);
 const komnata = params.get('komnata') === '1';
 const perf = params.get('perf') === '1';
 
-const mir = new Mir(MIR);
+const hranilishche = new HranilishcheBrauzera();
+const progress = zagruzitProgress(hranilishche);
+
+let mir = new Mir(MIR);
 let ur: ZagruzhennyyUroven | null = null;
 let telo: Telo;
 let igra: Igra | null = null;
+let tekushchiy: Uroven = urovenPoId(params.get('uroven') ?? '') ?? (UROVNI[0] as Uroven);
+let ekranPokazan = false;
+
+function zapustitUroven(u: Uroven): void {
+  tekushchiy = u;
+  mir = new Mir(MIR);
+  ur = zagruzitUroven(mir, u);
+  telo = new Telo(mir, u.start[0], u.start[1]);
+  igra = new Igra(mir, telo, ur);
+  statisty.length = 0;
+  ekranPokazan = false;
+  ekran.classList.remove('pokazan');
+  document.title = `TUFF ${u.id} ${u.nazvanie}`;
+}
+
+const ekran = document.getElementById('ekran') as HTMLDivElement;
+const ekranZagolovok = document.getElementById('ekran-zagolovok') as HTMLElement;
+const ekranZvezdy = document.getElementById('ekran-zvezdy') as HTMLElement;
+const ekranTekst = document.getElementById('ekran-tekst') as HTMLElement;
+const knopkaDalshe = document.getElementById('knopka-dalshe') as HTMLButtonElement;
+const knopkaEshche = document.getElementById('knopka-eshche') as HTMLButtonElement;
+
+function pokazatKonec(): void {
+  if (!igra || !ur) return;
+  ekranPokazan = true;
+  const serdca = ur.sushchnosti.filter((s) => s.tip === 'serdce').map((s) => s.sobrana);
+  const rez = zapisatRezultat(progress, tekushchiy.id, {
+    takty: igra.takty,
+    ochki: igra.ochki,
+    serdca,
+    porogOchkov: porogOchkov(tekushchiy),
+  });
+  sohranitProgress(hranilishche, progress);
+  const sek = igra.takty / 60;
+  ekranZagolovok.textContent = `${tekushchiy.nazvanie}: пройден`;
+  ekranZvezdy.textContent = '★'.repeat(rez.zvezdy) + '☆'.repeat(3 - rez.zvezdy);
+  ekranTekst.textContent = `время ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}  очки ${igra.ochki}  сердца ${igra.serdca}/${serdca.length}  смерти ${igra.smerti}`;
+  knopkaDalshe.style.display = sleduyushchiy(tekushchiy.id) ? '' : 'none';
+  ekran.classList.add('pokazan');
+}
+
+knopkaDalshe.addEventListener('click', () => {
+  const sl = sleduyushchiy(tekushchiy.id);
+  if (sl) zapustitUroven(sl);
+});
+knopkaEshche.addEventListener('click', () => zapustitUroven(tekushchiy));
+
+const statisty: Telo[] = [];
 
 if (komnata) {
   mir.dobavitOtrezok(-10, 0, 10, 0);
@@ -31,13 +88,9 @@ if (komnata) {
   mir.dobavitOtrezok(-3, 3.5, 0, 3.5, 0.05, 0, 0);
   telo = new Telo(mir, 0, 1.5);
 } else {
-  const dannye: Uroven = UROVEN_1_1;
-  ur = zagruzitUroven(mir, dannye);
-  telo = new Telo(mir, dannye.start[0], dannye.start[1]);
-  igra = new Igra(mir, telo, ur);
+  zapustitUroven(tekushchiy);
 }
 
-const statisty: Telo[] = [];
 if (perf) for (let i = 0; i < 24; i++) statisty.push(new Telo(mir, 3 + i * 0.7, 3 + (i % 4) * 1.2));
 
 const vvod = new Vvod(document.body);
@@ -89,6 +142,7 @@ async function start(): Promise<void> {
       telo.posle(nam);
       for (const s of statisty) s.posle(nam);
       igra?.takt(nam);
+      if (igra?.gotovo && !ekranPokazan) pokazatKonec();
       taktMs = taktMs * 0.95 + (performance.now() - t0) * 0.05;
       nakoplen -= MIR.shag;
     }

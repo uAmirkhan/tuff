@@ -8,10 +8,18 @@
       html, body { margin: 0; height: 100%; background: #1a1418; overflow: hidden; touch-action: none; }
       canvas { display: block; }
       #hud { position: fixed; left: 8px; top: 8px; color: #ddd; font: 12px monospace; pointer-events: none; white-space: pre; }
+      #ekran { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(20, 12, 10, 0.72); color: #fff1d6; font: 16px system-ui, sans-serif; }
+      #ekran.pokazan { display: flex; }
+      #ekran .karta { background: #2a1c17; border: 2px solid #ff8c3a; border-radius: 14px; padding: 22px 28px; min-width: 260px; text-align: center; }
+      #ekran h2 { margin: 0 0 8px; font-size: 22px; }
+      #ekran .zvezdy { font-size: 30px; letter-spacing: 6px; margin: 6px 0 10px; }
+      #ekran button { font: 16px system-ui, sans-serif; margin: 6px; padding: 10px 18px; border-radius: 10px; border: 0; background: #ff8c3a; color: #2a1c17; cursor: pointer; }
+      #ekran button.vtor { background: #6b5a4a; color: #fff1d6; }
     </style>
   </head>
   <body>
     <div id="hud"></div>
+    <div id="ekran"><div class="karta"><h2 id="ekran-zagolovok"></h2><div class="zvezdy" id="ekran-zvezdy"></div><div id="ekran-tekst"></div><div><button id="knopka-dalshe">Дальше</button><button id="knopka-eshche" class="vtor">Ещё раз</button></div></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
