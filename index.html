@@ -13,11 +13,23 @@
       #ekran .karta { background: #2a1c17; border: 2px solid #ff8c3a; border-radius: 14px; padding: 22px 28px; min-width: 260px; text-align: center; }
       #ekran h2 { margin: 0 0 8px; font-size: 22px; }
       #ekran .zvezdy { font-size: 30px; letter-spacing: 6px; margin: 6px 0 10px; }
-      #ekran button { font: 16px system-ui, sans-serif; margin: 6px; padding: 10px 18px; border-radius: 10px; border: 0; background: #ff8c3a; color: #2a1c17; cursor: pointer; }
-      #ekran button.vtor { background: #6b5a4a; color: #fff1d6; }
+      #ekran button, #menyu button { font: 16px system-ui, sans-serif; margin: 6px; padding: 10px 18px; border-radius: 10px; border: 0; background: #ff8c3a; color: #2a1c17; cursor: pointer; }
+      #ekran button.vtor, #menyu button.vtor { background: #6b5a4a; color: #fff1d6; }
       #menyu { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(20, 12, 10, 0.85); color: #fff1d6; font: 16px system-ui, sans-serif; overflow: auto; }
       #menyu.pokazan { display: flex; }
-      #menyu .karta { background: #2a1c17; border: 2px solid #ff8c3a; border-radius: 14px; padding: 18px 22px; min-width: 280px; max-width: 92vw; }
+      #menyu .karta { background: #2a1c17; border: 2px solid #ff8c3a; border-radius: 14px; padding: 18px 22px; min-width: 280px; max-width: 92vw; max-height: 92vh; box-sizing: border-box; overflow-y: auto; }
+      /* низкий экран (телефон в альбомной): компактные строки в две колонки, всё на одном экране без прокрутки */
+      @media (max-height: 460px) {
+        #menyu .karta { padding: 8px 14px; max-width: 96vw; }
+        #menyu h2 { font-size: 16px; margin: 0 0 4px; }
+        #menyu-spisok { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+        #menyu .uroven { padding: 4px 8px; margin: 2px 0; font-size: 14px; }
+        #menyu-zakryt { font-size: 14px; padding: 6px 14px; }
+        #ekran .karta { padding: 10px 16px; }
+        #ekran h2 { font-size: 18px; margin: 0 0 4px; }
+        #ekran .zvezdy { font-size: 22px; margin: 2px 0 6px; }
+        #ekran button, #menyu button { padding: 8px 14px; margin: 4px; font-size: 14px; }
+      }
       #menyu h2 { margin: 0 0 10px; font-size: 22px; text-align: center; }
       #menyu .uroven { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; margin: 4px 0; border-radius: 10px; background: #3b2a24; cursor: pointer; }
       #menyu .uroven.zakryt { opacity: 0.45; cursor: default; }
