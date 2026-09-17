@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/game/telo.ts","./src/game/config/telo.ts","./src/input/vvod.ts","./src/physics/mir.ts","./src/render/stsena.ts","./tests/telo-dni-1-2.test.ts","./scripts/dump.ts","./scripts/dump2.ts"],"version":"5.9.3"}
