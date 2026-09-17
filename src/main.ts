@@ -9,14 +9,14 @@ import { Stsena } from './render/stsena';
 const mir = new Mir(MIR);
 // Тестовая комната: пол, стены, потолок, полка, щель, скользкая плита
 mir.dobavitOtrezok(-10, 0, 10, 0); // пол
-mir.dobavitOtrezok(-10, 0, -10, 8); // левая стена
-mir.dobavitOtrezok(10, 0, 10, 8); // правая стена
-mir.dobavitOtrezok(-10, 8, 10, 8); // потолок
-mir.dobavitOtrezok(2, 2, 6, 2); // полка
-mir.dobavitOtrezok(6, 0, 6, 2); // торец полки
-mir.dobavitOtrezok(-6, 0, -6, 1.2); // столбик щели
-mir.dobavitOtrezok(-6.6, 0, -6.6, 1.2); // второй столбик: щель 0,6 диаметра
-mir.dobavitOtrezok(-3, 3.5, 0, 3.5, 0.05, 0); // скользкая плита, Вязкость не держит
+mir.dobavitOtrezok(-10, 8, -10, 0); // левая стена, свободная сторона +x
+mir.dobavitOtrezok(10, 0, 10, 8); // правая стена, свободная сторона -x
+mir.dobavitOtrezok(10, 8, -10, 8); // потолок, свободная сторона снизу
+mir.dobavitOtrezok(2, 2, 6, 2, 1, 1, 0); // полка, двусторонняя
+mir.dobavitOtrezok(6, 0, 6, 2, 1, 1, 0); // торец полки
+mir.dobavitOtrezok(-6, 0, -6, 1.2, 1, 1, 0); // столбик щели
+mir.dobavitOtrezok(-6.6, 0, -6.6, 1.2, 1, 1, 0); // второй столбик: щель 0,6 диаметра
+mir.dobavitOtrezok(-3, 3.5, 0, 3.5, 0.05, 0, 0); // скользкая плита, Вязкость не держит
 
 const telo = new Telo(mir, 0, 1.5);
 const vvod = new Vvod(document.body);
