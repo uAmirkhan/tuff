@@ -200,6 +200,15 @@ export class Igra {
         this.sobytiya.push({ tip: 'slomano', poligon: idx });
       }
     }
+    // Обвал: поднимается после задержки, касание тела снизу убивает
+    for (const s of this.ur.sushchnosti) {
+      if (s.tip !== 'obval') continue;
+      if (this.takty > s.zaderzhka * 60) s.verh += s.skorost / 60;
+      if (g.maxX > s.x && g.minX < s.x + s.w && g.minY < s.verh) {
+        this.umeret('обвал');
+        break;
+      }
+    }
     // Падение за границы уровня
     const gr = this.ur.dannye.granicy;
     if (cy < gr.minY - 2 || cx < gr.minX - 5 || cx > gr.maxX + 5) this.umeret('падение');
@@ -227,6 +236,12 @@ export class Igra {
     this.zhar = ZHAR.maks;
     this.korkaDo = 0;
     this.telo.vosstanovit(this.chekpoint[0], this.chekpoint[1], 'возрождение');
+    // обвал откатывается ниже чекпоинта и снова ждёт
+    for (const s of this.ur.sushchnosti) {
+      if (s.tip !== 'obval') continue;
+      s.verh = Math.min(s.verh, this.chekpoint[1] - 5);
+      s.zaderzhka = this.takty / 60 + 2;
+    }
     this.sobytiya.push({ tip: 'vozrozhdenie' });
   }
 }

@@ -80,6 +80,20 @@ export class Stsena {
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);
             g.fill({ color: 0xff7a1a, alpha: 0.85 });
             break;
+          case 'obval': {
+            // поднимающийся обвал: столб от низа уровня до текущего верха
+            const niz = ur.dannye.granicy.minY - 2;
+            g.rect(
+              this.ekX(s.x),
+              this.ekY(s.verh),
+              s.w * this.masshtab,
+              (s.verh - niz) * this.masshtab,
+            );
+            g.fill({ color: 0xff5a1a, alpha: 0.9 });
+            g.rect(this.ekX(s.x), this.ekY(s.verh), s.w * this.masshtab, 0.25 * this.masshtab);
+            g.fill({ color: 0xffd23f, alpha: 0.95 });
+            break;
+          }
           case 'voda':
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);
             g.fill({ color: 0x2f7f9f, alpha: 0.6 });

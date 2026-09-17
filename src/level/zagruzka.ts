@@ -17,6 +17,9 @@ export interface Sushchnost {
   aktivna: boolean; // для плит, рычагов, заслонок, горнов
   sobrana: boolean; // для собираемого
   otrezki: number[]; // отрезки заслонки, чтобы убрать при открытии
+  verh: number; // обвал: текущая высота верха
+  skorost: number;
+  zaderzhka: number;
   zvenya: number[]; // частицы звеньев цепи
   svyazi: number[]; // связи цепи
 }
@@ -144,6 +147,9 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       cel: o.cel ?? '',
       nuzhnaKorka: o.nuzhnaKorka ?? false,
       fiksiruetsya: o.fiksiruetsya ?? true,
+      verh: o.y,
+      skorost: o.skorost ?? 1,
+      zaderzhka: o.zaderzhka ?? 2,
       aktivna: false,
       sobrana: false,
       otrezki: [],
