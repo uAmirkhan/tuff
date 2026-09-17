@@ -135,27 +135,89 @@ export class Stsena {
         g.stroke({ width: 3, color: mir.oSherohovat[o] ? 0x6b5a4a : 0x8fb3c9 });
       }
     }
-    // тела
-    for (const t of tela) {
-      const m = t.mir;
-      const tsvet = t.vKorke ? 0x7a6656 : t.vVybrose ? 0xffb347 : 0xe8642c;
-      for (let i = 0; i < t.n; i++) {
-        const p = t.ot + i;
-        const x = (m.px[p] as number) + ((m.x[p] as number) - (m.px[p] as number)) * alpha;
-        const y = (m.py[p] as number) + ((m.y[p] as number) - (m.py[p] as number)) * alpha;
-        if (i === 0) g.moveTo(this.ekX(x), this.ekY(y));
-        else g.lineTo(this.ekX(x), this.ekY(y));
+    // тела: контур по частицам, материал по состоянию, свечение, глаза
+    for (const t of tela) this.risovatTelo(t, alpha);
+  }
+
+  private risovatTelo(t: Telo, alpha: number): void {
+    const g = this.g;
+    const m = t.mir;
+    const sost = t.sostoyanie;
+    // цвета состояний из 01-koncepciya: обычное, вязкость, расплав, корка, выброс
+    const zalivka =
+      sost === 'korka'
+        ? 0x6e5a4e
+        : sost === 'rasplav'
+          ? 0xffd166
+          : sost === 'vyazkost'
+            ? 0xb8321a
+            : sost === 'vybros'
+              ? 0xffb347
+              : 0xe8642c;
+    const svet = sost === 'korka' ? 0xff6a1a : 0xffa54d;
+    const px: number[] = this.bufX,
+      py: number[] = this.bufY;
+    let cx = 0,
+      cy = 0;
+    for (let i = 0; i < t.n; i++) {
+      const p = t.ot + i;
+      const x = (m.px[p] as number) + ((m.x[p] as number) - (m.px[p] as number)) * alpha;
+      const y = (m.py[p] as number) + ((m.y[p] as number) - (m.py[p] as number)) * alpha;
+      px[i] = this.ekX(x);
+      py[i] = this.ekY(y);
+      cx += px[i] as number;
+      cy += py[i] as number;
+    }
+    cx /= t.n;
+    cy /= t.n;
+    // свечение: увеличенный контур с прозрачностью
+    const r = sost === 'korka' ? 1.08 : 1.22;
+    for (let i = 0; i < t.n; i++) {
+      const x = cx + ((px[i] as number) - cx) * r,
+        y = cy + ((py[i] as number) - cy) * r;
+      if (i === 0) g.moveTo(x, y);
+      else g.lineTo(x, y);
+    }
+    g.closePath();
+    g.fill({ color: svet, alpha: sost === 'korka' ? 0.12 : 0.22 });
+    // тело
+    for (let i = 0; i < t.n; i++) {
+      if (i === 0) g.moveTo(px[i] as number, py[i] as number);
+      else g.lineTo(px[i] as number, py[i] as number);
+    }
+    g.closePath();
+    g.fill({ color: zalivka });
+    g.stroke({ width: 2, color: sost === 'korka' ? 0xff8a3a : 0xffd9a0, alpha: 0.7 });
+    // трещины корки: светящиеся линии от центра к частям контура
+    if (sost === 'korka' || sost === 'vybros') {
+      for (let i = 0; i < t.n; i += 2) {
+        g.moveTo(cx + ((px[i] as number) - cx) * 0.3, cy + ((py[i] as number) - cy) * 0.3);
+        g.lineTo(cx + ((px[i] as number) - cx) * 0.9, cy + ((py[i] as number) - cy) * 0.9);
       }
-      g.closePath();
-      g.fill({ color: tsvet });
-      g.stroke({ width: 2, color: 0xffd9a0, alpha: 0.6 });
-      for (let i = 0; i < t.n; i++) {
-        const p = t.ot + i;
-        if (m.vPoTochke[p] !== -1) {
-          g.circle(this.ekX(m.x[p] as number), this.ekY(m.y[p] as number), 3);
-          g.fill({ color: 0xff3b3b });
-        }
+      g.stroke({ width: 2, color: 0xffb347, alpha: sost === 'vybros' ? 0.9 : 0.55 });
+    }
+    // глаза: два огонька в верхней трети, смотрят по ходу движения
+    const napr = t.napravlenie;
+    const vysota = Math.min(...py.slice(0, t.n));
+    const ey = cy + (vysota - cy) * 0.45;
+    const raz = this.masshtab * 0.07;
+    for (const k of [-1, 1]) {
+      const ex = cx + k * this.masshtab * 0.16 + napr * this.masshtab * 0.08;
+      g.circle(ex, ey, raz * 1.6);
+      g.fill({ color: 0x2a1410, alpha: 0.85 });
+      g.circle(ex + napr * raz * 0.5, ey, raz * 0.9);
+      g.fill({ color: 0xfff1a8 });
+    }
+    // точки Вязкости
+    for (let i = 0; i < t.n; i++) {
+      const p = t.ot + i;
+      if (m.vPoTochke[p] !== -1) {
+        g.circle(px[i] as number, py[i] as number, 3);
+        g.fill({ color: 0xff3b3b, alpha: 0.8 });
       }
     }
   }
+
+  private readonly bufX: number[] = new Array(64).fill(0);
+  private readonly bufY: number[] = new Array(64).fill(0);
 }
