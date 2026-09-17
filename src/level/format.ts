@@ -68,6 +68,8 @@ export interface Uroven {
   obekty: Obekt[];
   vremyaZvezdy?: number; // секунды на вторую звезду там, где нет сердце-камней
   vyhodPosleBossa?: boolean; // выход открывается только после победы над боссом
+  rezhim?: 'kampaniya' | 'zherlo'; // Жерло: без чекпоинтов, таймер, призрак лучшей попытки
+  zvyozdDlyaOtkrytiya?: number; // сколько звёзд мира нужно, чтобы уровень открылся
 }
 
 export const SVOYSTVA_MATERIALA: Record<Material, { trenie: number; sherohovat: 0 | 1 }> = {

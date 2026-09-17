@@ -7,6 +7,7 @@ export interface ProgressUrovnya {
   luchshieOchki: number;
   serdca: boolean[]; // по id сердце-камней в порядке уровня
   zvezdy: 0 | 1 | 2 | 3;
+  zapis?: number[]; // Жерло: ввод лучшей попытки по тактам
 }
 
 export interface Progress {
@@ -94,7 +95,7 @@ export function schitatZvezdy(
 export function zapisatRezultat(
   p: Progress,
   id: string,
-  rez: { takty: number; ochki: number; serdca: boolean[]; porogOchkov: number },
+  rez: { takty: number; ochki: number; serdca: boolean[]; porogOchkov: number; zapis?: number[] },
 ): ProgressUrovnya {
   const bylo = p.urovni[id] ?? {
     proyden: false,
@@ -115,6 +116,10 @@ export function zapisatRezultat(
     serdca.length,
   );
   const novoe: ProgressUrovnya = { proyden: true, luchsheeVremya, luchshieOchki, serdca, zvezdy };
+  // запись хранится только у лучшего времени
+  if (rez.zapis && (bylo.luchsheeVremya === 0 || rez.takty <= bylo.luchsheeVremya))
+    novoe.zapis = rez.zapis;
+  else if (bylo.zapis) novoe.zapis = bylo.zapis;
   p.urovni[id] = novoe;
   return novoe;
 }

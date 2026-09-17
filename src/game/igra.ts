@@ -35,6 +35,11 @@ export class Igra {
 
   readonly vragi: Vrag[] = [];
   boss: TroynoyKotyol | null = null;
+  // Жерло: высота и самое длинное падение
+  maksVysota = 0;
+  padenieOt = 0;
+  dlinneysheePadenie = 0;
+  private proshlayaY = 0;
 
   constructor(
     readonly mir: Mir,
@@ -237,6 +242,19 @@ export class Igra {
         this.umeret('обвал');
         break;
       }
+    }
+    // Жерло: высота и падения
+    if (this.ur.dannye.rezhim === 'zherlo') {
+      const vys = cy - this.ur.dannye.start[1];
+      if (vys > this.maksVysota) this.maksVysota = vys;
+      if (cy < this.proshlayaY - 0.001) {
+        if (this.padenieOt === 0) this.padenieOt = this.proshlayaY;
+      } else if (this.padenieOt !== 0) {
+        const p = this.padenieOt - this.proshlayaY;
+        if (p > this.dlinneysheePadenie) this.dlinneysheePadenie = p;
+        this.padenieOt = 0;
+      }
+      this.proshlayaY = cy;
     }
     // Падение за границы уровня
     const gr = this.ur.dannye.granicy;
