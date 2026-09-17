@@ -96,6 +96,12 @@ function ploshchad(t: [number, number][]): number {
   return s / 2;
 }
 
+// Глубина выталкивания граней тонкого прямоугольника: не больше 45% меньшей стороны
+function ogranichitGlubinu(mir: Mir, otrezki: number[], tolshchina: number): void {
+  const g = Math.min(0.5, tolshchina * 0.45);
+  for (const o of otrezki) if ((mir.oGlubina[o] as number) > g) mir.oGlubina[o] = g;
+}
+
 // Твёрдый контейнер w×h с центром (cx, cy): углы против часовой от левого нижнего, шесть связей
 export function postroitKonteyner(
   mir: Mir,
@@ -347,6 +353,9 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
         mir.dobavitOtrezok(x2, y2, x2, y1, tr, mat.sherohovat, 1),
         mir.dobavitOtrezok(x2, y1, x1, y1, tr, mat.sherohovat, 1),
       );
+      // тонкое тело: глубина выталкивания меньше половины толщины, иначе дальняя грань
+      // выталкивает частицу вперёд и стенка проходится насквозь на скорости (грабли 17.09)
+      ogranichitGlubinu(mir, s.otrezki, Math.min(o.w ?? 0, o.h ?? 0));
       if (o.tip === 'konveyer') mir.zadatPoverhnost(s.otrezki[1] as number, (o.skorost ?? 1) / 60);
     }
     if (o.tip === 'zaslonka') {
@@ -361,6 +370,9 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
         mir.dobavitOtrezok(x2, y2, x2, y1, 0.3, 0, 1),
         mir.dobavitOtrezok(x2, y1, x1, y1, 0.3, 0, 1),
       );
+      // тонкое тело: глубина выталкивания меньше половины толщины, иначе дальняя грань
+      // выталкивает частицу вперёд и стенка проходится насквозь на скорости (грабли 17.09)
+      ogranichitGlubinu(mir, s.otrezki, Math.min(o.w ?? 0, o.h ?? 0));
     }
     sushchnosti.push(s);
   }
