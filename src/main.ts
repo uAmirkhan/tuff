@@ -1,5 +1,6 @@
 // Точка входа: уровень 1-1 по умолчанию, ?komnata=1 тестовая комната, ?perf=1 замер.
 import { Graphics } from 'pixi.js';
+import { Zvuk } from './audio/zvuk';
 import { MIR } from './game/config/telo';
 import { Igra } from './game/igra';
 import { Telo } from './game/telo';
@@ -158,6 +159,16 @@ if (komnata) {
 
 if (perf) for (let i = 0; i < 24; i++) statisty.push(new Telo(mir, 3 + i * 0.7, 3 + (i % 4) * 1.2));
 
+const zvuk = new Zvuk();
+zvuk.vklyuchen = progress.nastroyki.zvuk;
+// звук включается первым жестом: требование браузеров
+const razbuditZvuk = () => {
+  zvuk.vklyuchit();
+  zvuk.muzyka(true);
+};
+window.addEventListener('pointerdown', razbuditZvuk, { once: true });
+window.addEventListener('keydown', razbuditZvuk, { once: true });
+
 const vvod = new Vvod(document.body);
 vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
 const stsena = new Stsena();
@@ -213,6 +224,14 @@ async function start(): Promise<void> {
       telo.posle(nam);
       for (const s of statisty) s.posle(nam);
       igra?.takt(nam);
+      // скорость тела за такт для звука удара
+      let sk = 0;
+      for (let i = telo.ot; i < telo.ot + telo.n; i++)
+        sk += Math.hypot(
+          (mir.x[i] as number) - (mir.px[i] as number),
+          (mir.y[i] as number) - (mir.py[i] as number),
+        );
+      zvuk.takt(telo, igra?.sobytiya ?? [], sk / telo.n);
       if (igra?.gotovo && !ekranPokazan) pokazatKonec();
       taktMs = taktMs * 0.95 + (performance.now() - t0) * 0.05;
       nakoplen -= MIR.shag;
