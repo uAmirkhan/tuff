@@ -5,7 +5,7 @@ import { MIR } from './game/config/telo';
 import { Igra } from './game/igra';
 import { PUSTOE, Telo } from './game/telo';
 import { Prizrak, Zapis } from './game/zapis';
-import { Vvod } from './input/vvod';
+import { type Knopka, Vvod } from './input/vvod';
 import type { Uroven } from './level/format';
 import { porogOchkov, sleduyushchiy, UROVNI, urovenOtkryt, urovenPoId } from './level/spisok';
 import { type ZagruzhennyyUroven, zagruzitUroven } from './level/zagruzka';
@@ -116,7 +116,7 @@ function pokazatKonec(): void {
     const rekord = bylo === 0 || igra.takty <= bylo ? `  ${t(yazyk, 'rekord')}` : '';
     ekranTekst.textContent = `${t(yazyk, 'vremya')} ${vremya}${rekord}  ${t(yazyk, 'padenie')} ${igra.dlinneysheePadenie.toFixed(1)}`;
   } else {
-    ekranTekst.textContent = `${t(yazyk, 'vremya')} ${vremya}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/${serdca.length}  ${t(yazyk, 'smerti')} ${igra.smerti}`;
+    ekranTekst.innerHTML = `${t(yazyk, 'vremya')} ${vremya} &nbsp;•&nbsp; ${t(yazyk, 'ochki')} ${igra.ochki}<br>${t(yazyk, 'serdca')} ${igra.serdca}/${serdca.length} &nbsp;•&nbsp; ${t(yazyk, 'smerti')} ${igra.smerti}`;
   }
   // реклама между уровнями: только здесь, симуляция стоит, звук глушится на время ролика
   zvuk.ustanovitGromkost(0);
@@ -160,7 +160,7 @@ function pokazatMenyu(): void {
       u.rezhim === 'zherlo' && pr?.luchsheeVremya
         ? ` ${Math.floor(pr.luchsheeVremya / 3600)}:${String(Math.floor((pr.luchsheeVremya / 60) % 60)).padStart(2, '0')}`
         : '';
-    el.innerHTML = `<span>${u.id} ${nazvanieUrovnya(yazyk, u.id, u.nazvanie)}${vremya}</span><span class="z">${otkryt ? '★'.repeat(z) + '☆'.repeat(3 - z) : `🔒 ${u.rezhim === 'zherlo' ? `${u.zvyozdDlyaOtkrytiya ?? 12}★` : ''}`}</span>`;
+    el.innerHTML = `<span>${u.id} ${nazvanieUrovnya(yazyk, u.id, u.nazvanie)}${vremya}</span><span class="z">${otkryt ? '★'.repeat(z) + '☆'.repeat(3 - z) : `🔒 ${u.rezhim === 'zherlo' ? `${t(yazyk, 'nuzhno')} ${u.zvyozdDlyaOtkrytiya ?? 12}★` : ''}`}</span>`;
     if (otkryt)
       el.addEventListener('click', () => {
         skrytMenyu();
@@ -269,19 +269,98 @@ let fpsT = last;
 let fps = 0;
 let taktMs = 0;
 
+// Цвета кнопок способностей по материалу (05-art): Вязкость янтарная, Расплав жёлто-горячий,
+// Корка серо-каменная, Выброс ярко-оранжевый
+const TSVET_KNOPKI: Record<Knopka, number> = {
+  vyazkost: 0xc98a3a,
+  rasplav: 0xffd23f,
+  korka: 0x8a8a8a,
+  vybros: 0xff6a1a,
+};
+
+// Значки кнопок примитивами: три капли (липнет), волна (течёт), шестиугольник (твердеет), стрелка вверх (прыжок)
+function znachokKnopki(k: Knopka, x: number, y: number, r: number, cvet: number): void {
+  switch (k) {
+    case 'vyazkost':
+      for (const [dx, dy] of [
+        [-0.7, 0.3],
+        [0, -0.5],
+        [0.7, 0.3],
+      ] as const) {
+        ui.circle(x + dx * r, y + dy * r, r * 0.32);
+        ui.fill({ color: cvet });
+      }
+      break;
+    case 'rasplav':
+      ui.moveTo(x - r, y);
+      for (let i = 1; i <= 8; i++)
+        ui.lineTo(x - r + (i / 8) * 2 * r, y + Math.sin(i * 1.57) * r * 0.4);
+      ui.stroke({ width: 3, color: cvet });
+      break;
+    case 'korka':
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+        if (i === 0) ui.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+        else ui.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      ui.closePath();
+      ui.stroke({ width: 3, color: cvet });
+      break;
+    case 'vybros':
+      ui.moveTo(x, y - r);
+      ui.lineTo(x + r * 0.8, y + r * 0.2);
+      ui.lineTo(x + r * 0.3, y + r * 0.2);
+      ui.lineTo(x + r * 0.3, y + r);
+      ui.lineTo(x - r * 0.3, y + r);
+      ui.lineTo(x - r * 0.3, y + r * 0.2);
+      ui.lineTo(x - r * 0.8, y + r * 0.2);
+      ui.closePath();
+      ui.fill({ color: cvet });
+      break;
+  }
+}
+
 function risovatUi(): void {
   ui.clear();
   if (chisto) return;
-  if (estKasanie || vvod.tachAktiven)
-    for (const b of vvod.geometriyaKnopok()) {
+  if (menyuPokazano || ekranPokazan) return; // под окном меню и конца уровня кнопок нет
+  if (estKasanie || vvod.tachAktiven) {
+    const geo = vvod.geometriyaKnopok();
+    // тёмная подложка под ромбом, чтобы кнопки читались как интерфейс, а не как часть скалы
+    const c = geo[0] as (typeof geo)[number];
+    ui.circle(c.x, c.y + c.r * 1.6, c.r * 3.1);
+    ui.fill({ color: 0x1a0f12, alpha: 0.45 });
+    for (const b of geo) {
       const aktivna = vvod.nam[b.k] as boolean;
+      const cvet = TSVET_KNOPKI[b.k];
       ui.circle(b.x, b.y, b.r);
-      ui.fill({ color: aktivna ? 0xffb347 : 0xffffff, alpha: aktivna ? 0.6 : 0.18 });
+      ui.fill({ color: cvet, alpha: aktivna ? 0.85 : 0.35 });
+      ui.circle(b.x, b.y, b.r);
+      ui.stroke({ width: 2, color: 0xfff1d6, alpha: aktivna ? 0.9 : 0.35 });
+      znachokKnopki(b.k, b.x, b.y, b.r * 0.45, aktivna ? 0x2a1c17 : 0xfff1d6);
     }
+  }
   const s = vvod.stik;
   if (s.aktiven) {
     ui.circle(s.x0, s.y0, 48);
+    ui.fill({ color: 0xfff1d6, alpha: 0.1 });
+    ui.circle(s.x0, s.y0, 48);
     ui.stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
+    // стрелки по четырём сторонам: здесь тянут палец
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const ax = s.x0 + dx * 36,
+        ay = s.y0 + dy * 36;
+      ui.moveTo(ax + dx * 6, ay + dy * 6);
+      ui.lineTo(ax - dy * 5 - dx * 2, ay + dx * 5 - dy * 2);
+      ui.lineTo(ax + dy * 5 - dx * 2, ay - dx * 5 - dy * 2);
+      ui.closePath();
+      ui.fill({ color: 0xffffff, alpha: 0.5 });
+    }
   }
   if (igra) {
     const w = window.innerWidth;
