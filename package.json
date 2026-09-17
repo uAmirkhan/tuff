@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cleanroom": "node scripts/cleanroom.mjs",
+    "paket": "node scripts/paket.mjs",
     "check": "biome check src && tsc -b && vitest run && node scripts/cleanroom.mjs"
   },
   "dependencies": {
