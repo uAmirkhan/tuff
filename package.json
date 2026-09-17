@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "cleanroom": "node scripts/cleanroom.mjs",
     "paket": "node scripts/paket.mjs",
-    "check": "biome check src && tsc -b && vitest run && node scripts/cleanroom.mjs"
+    "check": "biome check src && tsc -b && vitest run && node scripts/cleanroom.mjs",
+    "karty": "tsx scripts/eksport-tiled.ts"
   },
   "dependencies": {
     "pixi.js": "^8.19.0"

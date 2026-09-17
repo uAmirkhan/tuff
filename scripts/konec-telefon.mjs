@@ -8,9 +8,14 @@ page.on('pageerror', (e) => console.log('[error]', e.message));
 await page.goto('http://localhost:5180/?uroven=1-1');
 await page.waitForTimeout(1500);
 const shagi = [
-  [['KeyD'], 300], [['KeyD', 'KeyW', 'KeyJ'], 420], [['KeyD'], 240], [['KeyD'], 240], [['KeyD'], 600],
+  [['KeyD'], 300],
+  [['KeyD', 'KeyW', 'KeyJ'], 420],
+  [['KeyD'], 240],
+  [['KeyD'], 240],
+  [['KeyD'], 600],
 ];
-const pokazan = () => page.evaluate(() => document.querySelector('#ekran')?.classList.contains('pokazan'));
+const pokazan = () =>
+  page.evaluate(() => document.querySelector('#ekran')?.classList.contains('pokazan'));
 for (const [keys, takty] of shagi) {
   for (const k of keys) await page.keyboard.down(k);
   const t0 = Date.now();
@@ -32,7 +37,15 @@ if (est) {
   await page.waitForTimeout(600);
   const hud = await page.textContent('#hud');
   const s = await page.evaluate(() => window.tuff);
-  console.log('после «Дальше»: экран', await pokazan(), '| герой', s.cx.toFixed(1), s.cy.toFixed(1), '| HUD', (hud ?? '').split('\n')[0]);
+  console.log(
+    'после «Дальше»: экран',
+    await pokazan(),
+    '| герой',
+    s.cx.toFixed(1),
+    s.cy.toFixed(1),
+    '| HUD',
+    (hud ?? '').split('\n')[0],
+  );
   await page.screenshot({ path: 'kadry/16-posle-dalshe.png' });
 }
 await browser.close();

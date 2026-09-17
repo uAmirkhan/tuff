@@ -1,0 +1,733 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.11.0",
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "infinite": false,
+  "width": 30,
+  "height": 19,
+  "tilewidth": 32,
+  "tileheight": 32,
+  "nextlayerid": 3,
+  "nextobjectid": 31,
+  "tilesets": [],
+  "layers": [
+    {
+      "id": 1,
+      "name": "poligony",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 224,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 256,
+              "y": 0
+            },
+            {
+              "x": 256,
+              "y": -32
+            },
+            {
+              "x": 0,
+              "y": -32
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 608,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -608
+            },
+            {
+              "x": 0,
+              "y": -608
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 32,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 960,
+              "y": 0
+            },
+            {
+              "x": 960,
+              "y": -32
+            },
+            {
+              "x": 0,
+              "y": -32
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "",
+          "class": "hrupkiy",
+          "x": 256,
+          "y": 300.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": -12.8
+            },
+            {
+              "x": 0,
+              "y": -12.8
+            }
+          ],
+          "properties": [
+            {
+              "name": "hrupkost",
+              "type": "float",
+              "value": 1.2
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "",
+          "class": "hrupkiy",
+          "x": 256,
+          "y": 396.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": -12.8
+            },
+            {
+              "x": 0,
+              "y": -12.8
+            }
+          ],
+          "properties": [
+            {
+              "name": "hrupkost",
+              "type": "float",
+              "value": 1.2
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "",
+          "class": "hrupkiy",
+          "x": 256,
+          "y": 492.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": 0
+            },
+            {
+              "x": 192,
+              "y": -12.8
+            },
+            {
+              "x": 0,
+              "y": -12.8
+            }
+          ],
+          "properties": [
+            {
+              "name": "hrupkost",
+              "type": "float",
+              "value": 1.2
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "",
+          "class": "bazalt",
+          "x": 224,
+          "y": 512,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -288
+            },
+            {
+              "x": 0,
+              "y": -288
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "name": "",
+          "class": "bazalt",
+          "x": 448,
+          "y": 480,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -112
+            },
+            {
+              "x": 0,
+              "y": -112
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "",
+          "class": "bazalt",
+          "x": 448,
+          "y": 320,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -192
+            },
+            {
+              "x": 0,
+              "y": -192
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "",
+          "class": "bazalt",
+          "x": 0,
+          "y": 608,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 960,
+              "y": 0
+            },
+            {
+              "x": 960,
+              "y": -64
+            },
+            {
+              "x": 0,
+              "y": -64
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "",
+          "class": "bazalt",
+          "x": 480,
+          "y": 544,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 480,
+              "y": 0
+            },
+            {
+              "x": 480,
+              "y": -32
+            },
+            {
+              "x": 0,
+              "y": -32
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "",
+          "class": "bazalt",
+          "x": 416,
+          "y": 544,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 64,
+              "y": 0
+            },
+            {
+              "x": 64,
+              "y": -32
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "",
+          "class": "hrupkiy",
+          "x": 480,
+          "y": 384,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 128,
+              "y": 0
+            },
+            {
+              "x": 128,
+              "y": -16
+            },
+            {
+              "x": 0,
+              "y": -16
+            }
+          ],
+          "properties": [
+            {
+              "name": "hrupkost",
+              "type": "float",
+              "value": 1.2
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "name": "",
+          "class": "bazalt",
+          "x": 480,
+          "y": 320,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 128,
+              "y": 0
+            },
+            {
+              "x": 128,
+              "y": -16
+            },
+            {
+              "x": 0,
+              "y": -16
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "name": "",
+          "class": "bazalt",
+          "x": 608,
+          "y": 384,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -256
+            },
+            {
+              "x": 0,
+              "y": -256
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "name": "",
+          "class": "bazalt",
+          "x": 928,
+          "y": 512,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": 0
+            },
+            {
+              "x": 32,
+              "y": -480
+            },
+            {
+              "x": 0,
+              "y": -480
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "obekty",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 17,
+          "name": "start",
+          "class": "start",
+          "x": 64,
+          "y": 169.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 18,
+          "name": "g-start",
+          "class": "gorn",
+          "x": 160,
+          "y": 172.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 19,
+          "name": "i-shahta",
+          "class": "ispytanie",
+          "x": 272,
+          "y": 176,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 20,
+          "name": "",
+          "class": "zharkamen",
+          "x": 352,
+          "y": 268.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 21,
+          "name": "",
+          "class": "zharkamen",
+          "x": 352,
+          "y": 364.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 22,
+          "name": "",
+          "class": "zharkamenSredniy",
+          "x": 352,
+          "y": 460.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 23,
+          "name": "s-nisha",
+          "class": "serdce",
+          "x": 560,
+          "y": 345.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 24,
+          "name": "l-dno",
+          "class": "lava",
+          "x": 256,
+          "y": 528,
+          "width": 192,
+          "height": 16,
+          "rotation": 0,
+          "visible": true
+        },
+        {
+          "id": 25,
+          "name": "",
+          "class": "ugolek",
+          "x": 288,
+          "y": 521.6,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 26,
+          "name": "s-dno",
+          "class": "serdce",
+          "x": 432,
+          "y": 524.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 27,
+          "name": "g-dno",
+          "class": "gorn",
+          "x": 544,
+          "y": 492.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 28,
+          "name": "",
+          "class": "zharkamen",
+          "x": 672,
+          "y": 492.8,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 29,
+          "name": "s-verh",
+          "class": "serdce",
+          "x": 96,
+          "y": 80,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        },
+        {
+          "id": 30,
+          "name": "v",
+          "class": "vyhod",
+          "x": 864,
+          "y": 486.4,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "point": true
+        }
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "name": "id",
+      "type": "string",
+      "value": "1-2"
+    },
+    {
+      "name": "nazvanie",
+      "type": "string",
+      "value": "Тонкий пол"
+    },
+    {
+      "name": "mysl",
+      "type": "string",
+      "value": "Корка: тяжесть ломает хрупкое; лава лечит после падения"
+    },
+    {
+      "name": "minX",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "minY",
+      "type": "int",
+      "value": -3
+    },
+    {
+      "name": "maxX",
+      "type": "int",
+      "value": 30
+    },
+    {
+      "name": "maxY",
+      "type": "int",
+      "value": 16
+    }
+  ]
+}
