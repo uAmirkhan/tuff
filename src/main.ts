@@ -450,7 +450,23 @@ async function start(): Promise<void> {
     risovatUi();
     // подписи значков обучения
     for (const tx of znachkiTekst) tx.visible = false;
+    // на устройстве с касанием буква клавиши ничего не значит: рисуем значок и цвет кнопки
+    const KNOPKA_PO_BUKVE: Record<string, Knopka> = {
+      J: 'vyazkost',
+      K: 'rasplav',
+      L: 'korka',
+      '␣': 'vybros',
+    };
     stsena.znachki.forEach((z, i) => {
+      if (estKasanie) {
+        const k = KNOPKA_PO_BUKVE[z.tekst];
+        if (k) {
+          ui.circle(z.x, z.y, 16);
+          ui.fill({ color: TSVET_KNOPKI[k] });
+          znachokKnopki(k, z.x, z.y, 8, 0x2a1c17);
+        }
+        return;
+      }
       let tx = znachkiTekst[i];
       if (!tx) {
         tx = new Text({
