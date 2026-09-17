@@ -6,8 +6,9 @@ import { proveritUroven } from '../src/level/validator';
 
 // числа округляются до тысячных: в исходниках уровней бывают хвосты вроде 5.800000000000001
 function norm(v: unknown): unknown {
-  return JSON.parse(JSON.stringify(v), (_k, x) =>
-    typeof x === 'number' ? Math.round(x * 1000) / 1000 : x,
+  return JSON.parse(
+    JSON.stringify(v),
+    (_k, x) => (typeof x === 'number' ? Math.round(x * 1000) / 1000 + 0 : x), // +0 убирает -0
   );
 }
 
