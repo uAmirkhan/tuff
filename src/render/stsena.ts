@@ -219,29 +219,9 @@ export class Stsena {
           case 'cep':
             this.risovatCep(mir, s);
             break;
-          case 'ispytanie': {
-            // значок обучения: иконка способности над препятствием, пока её не применили (02-gdd, раздел 13)
-            const sp =
-              s.id.includes('vyazk') || s.id.includes('stena') || s.id.includes('potolok')
-                ? 'J'
-                : s.id.includes('shaht') || s.id.includes('plita')
-                  ? 'L'
-                  : s.id.includes('trub')
-                    ? 'K'
-                    : s.id.includes('ustup')
-                      ? '␣'
-                      : '';
-            if (sp && !this.pokazannye.has(sp)) {
-              const m = this.masshtab;
-              const qy = y - 1.6 * m + Math.sin(performance.now() / 300) * 4;
-              g.roundRect(x - 0.35 * m, qy - 0.35 * m, 0.7 * m, 0.7 * m, 8);
-              g.fill({ color: 0xfff1d6, alpha: 0.9 });
-              g.roundRect(x - 0.35 * m, qy - 0.35 * m, 0.7 * m, 0.7 * m, 8);
-              g.stroke({ width: 2, color: 0xff8c3a });
-              this.znachki.push({ x, y: qy, tekst: sp });
-            }
+          case 'ispytanie':
+            // разметка для валидатора; обучение показывают схемы-таблички (shema)
             break;
-          }
           case 'bak': {
             // бак образца: стеклянный цилиндр на постаменте; полный светится, разбитый с трещиной
             const m = this.masshtab;

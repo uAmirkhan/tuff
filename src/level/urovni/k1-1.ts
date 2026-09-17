@@ -38,6 +38,16 @@ export const UROVEN_K1_1: Uroven = {
         [0, 12],
       ],
     },
+    // полка второго ряда баков (x 2.5..13, y 4..4.25): масштаб зала, на неё можно залезть со стены
+    {
+      tochki: [
+        [2.5, 4],
+        [13, 4],
+        [13, 4.25],
+        [2.5, 4.25],
+      ],
+      material: 'metall',
+    },
     // карниз над рядом баков (спрятанный сердце-камень)
     {
       tochki: [
@@ -155,12 +165,12 @@ export const UROVEN_K1_1: Uroven = {
     { tip: 'bak', id: 'b-2', x: 8.6, y: 0, w: 1, h: 1.8, vid: 'pustoy' },
     { tip: 'bak', id: 'b-3', x: 10.3, y: 0, w: 1, h: 1.8, vid: 'pustoy' },
     { tip: 'bak', id: 'b-vstrecha', x: 12, y: 0, w: 1, h: 1.8, vid: 'polnyy' },
-    { tip: 'bak', id: 'b-4', x: 3.5, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
-    { tip: 'bak', id: 'b-5', x: 5.2, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
-    { tip: 'bak', id: 'b-6', x: 6.9, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
-    { tip: 'bak', id: 'b-7', x: 8.6, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
-    { tip: 'bak', id: 'b-8', x: 10.3, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
-    { tip: 'bak', id: 'b-9', x: 12, y: 4.2, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-4', x: 3.5, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-5', x: 5.2, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-6', x: 6.9, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-7', x: 8.6, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-8', x: 10.3, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
+    { tip: 'bak', id: 'b-9', x: 12, y: 4.25, w: 0.9, h: 1.6, vid: 'pustoy' },
     { tip: 'serdce', id: 's-nisha', x: 1.3, y: 0.9 },
     { tip: 'zharkamen', id: 'zk1', x: 7, y: 0.6 },
     { tip: 'zharkamen', id: 'zk2', x: 9, y: 0.6 },
