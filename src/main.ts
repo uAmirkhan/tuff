@@ -26,6 +26,8 @@ const komnata = params.get('komnata') === '1';
 const perf = params.get('perf') === '1';
 // ?chisto=1: без отладочного текста и сенсорных кнопок, для кадров на страницу порталов
 const chisto = params.get('chisto') === '1';
+// ?otladka=1: строки fps, такта и промахов в HUD (тестерам не показываются)
+const otladka = params.get('otladka') === '1' || perf;
 // сенсорные кнопки рисуются на устройствах с касанием или после первого касания
 const estKasanie = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
@@ -401,7 +403,24 @@ async function start(): Promise<void> {
         : `${t(yazyk, 'zhar')} ${igra.zhar.toFixed(0)}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/3  ${t(yazyk, 'smerti')} ${igra.smerti}`
       : '';
     if (!chisto)
-      hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
+      hud.textContent = [
+        otladka ? `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}` : '',
+        otladka
+          ? `w ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}`
+          : '',
+        sostoyanie,
+        estKasanie ? '' : t(yazyk, 'podskazka'),
+      ]
+        .filter(Boolean)
+        .join('\n');
+    // отладочное состояние для прогонов Playwright (положение героя, ввод)
+    (window as unknown as { tuff: unknown }).tuff = {
+      cx: telo.cx,
+      cy: telo.cy,
+      nam: { ...vvod.nam },
+      sost: telo.sost,
+      tach: vvod.tachAktiven,
+    };
   });
 }
 

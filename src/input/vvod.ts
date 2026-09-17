@@ -73,8 +73,9 @@ export class Vvod {
     const perv = bliz[0] as { k: Knopka; d: number; r: number };
     const rez: Knopka[] = [perv.k];
     const vtor = bliz[1];
-    // аккорд: обе кнопки на расстоянии не дальше 1,1 r
-    if (vtor && vtor.d < perv.r * 1.1 && perv.d < perv.r * 1.1) rez.push(vtor.k);
+    // аккорд: обе кнопки в радиусе захвата. Соседи ромба стоят на 2,26 r друг от друга,
+    // середина между ними на 1,13 r от каждой: порог 1,1 r делал аккорд недостижимым (прогон 17.09)
+    if (vtor && vtor.d < perv.r * 1.25 && perv.d < perv.r * 1.25) rez.push(vtor.k);
     return rez;
   }
 
