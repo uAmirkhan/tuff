@@ -167,6 +167,7 @@ export class Igra {
         if (this.mir.kontaktTel[i] && this.mir.kontaktTelKontur[i] === this.telo.kontur)
           kasanie = true;
       }
+      v.kasaetsya = kasanie;
       if (kasanie) {
         if (this.telo.vKorke && BOY.korkaZashchishchaet) {
           const udar = this.mir.udarTel[v.kontur] as number;
