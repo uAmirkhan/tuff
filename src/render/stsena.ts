@@ -87,10 +87,26 @@ export class Stsena {
               g.fill({ color: 0x8a8a99 });
             }
             break;
-          case 'gorn':
-            g.circle(x, y, 0.35 * this.masshtab);
-            g.fill({ color: s.aktivna ? 0xffc14d : 0x6b5a4a });
+          case 'gorn': {
+            // горн: каменная арка с огнём внутри, когда активен
+            const m = this.masshtab;
+            g.rect(x - 0.45 * m, y - 0.6 * m, 0.9 * m, 0.6 * m);
+            g.fill({ color: 0x3a2c26 });
+            g.rect(x - 0.45 * m, y - 0.75 * m, 0.9 * m, 0.15 * m);
+            g.fill({ color: 0x5a4438 });
+            g.rect(x - 0.28 * m, y - 0.5 * m, 0.56 * m, 0.5 * m);
+            g.fill({ color: s.aktivna ? 0xff7a1a : 0x1a1210 });
+            if (s.aktivna) {
+              const t = (performance.now() / 120) % 6.28;
+              const kach = t < 3.14 ? t / 3.14 : (6.28 - t) / 3.14;
+              g.moveTo(x - 0.2 * m, y - 0.02 * m);
+              g.lineTo(x, y - (0.55 + 0.15 * kach) * m);
+              g.lineTo(x + 0.2 * m, y - 0.02 * m);
+              g.closePath();
+              g.fill({ color: 0xffd23f, alpha: 0.9 });
+            }
             break;
+          }
           case 'vyhod':
             g.circle(x, y, 0.5 * this.masshtab);
             g.stroke({ width: 3, color: 0xfff1a8 });
