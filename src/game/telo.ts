@@ -186,6 +186,51 @@ export class Telo {
     this.oknoI = (this.oknoI + 1) % this.okno.length;
   }
 
+  // Сторожа тела: взрыв (периметр вырос втрое), выворачивание (знак площади), самопересечение
+  // соседних рёбер. Возвращает причину или null. Восстанавливает форму в текущем центре.
+  private perimetrPokoya = 0;
+  storozha(): string | null {
+    if (this.perimetrPokoya === 0) this.perimetrPokoya = this.perimetr();
+    let prichina: string | null = null;
+    if (this.perimetr() > this.perimetrPokoya * 3) prichina = 'взрыв: периметр втрое';
+    else if (this.ploshchad() < 0) prichina = 'выворачивание: площадь отрицательна';
+    else if (this.samoperesechenie()) prichina = 'самопересечение контура';
+    if (prichina) {
+      this.schitatCentr();
+      this.vosstanovit(this.cx, this.cy, prichina);
+    }
+    return prichina;
+  }
+
+  // Пересечение рёбер контура (i,i+1) и (j,j+1) для несмежных пар
+  private samoperesechenie(): boolean {
+    const m = this.mir;
+    const n = this.n;
+    for (let i = 0; i < n; i++) {
+      const a = this.ot + i,
+        b = this.ot + ((i + 1) % n);
+      for (let j = i + 2; j < n; j++) {
+        if (i === 0 && j === n - 1) continue;
+        const c = this.ot + j,
+          d = this.ot + ((j + 1) % n);
+        if (
+          otrezkiPeresekayutsya(
+            m.x[a] as number,
+            m.y[a] as number,
+            m.x[b] as number,
+            m.y[b] as number,
+            m.x[c] as number,
+            m.y[c] as number,
+            m.x[d] as number,
+            m.y[d] as number,
+          )
+        )
+          return true;
+      }
+    }
+    return false;
+  }
+
   // Восстановить кольцо в точке: возрождение и сторожа. Скорости обнуляются, якоря рвутся.
   vosstanovit(cx: number, cy: number, prichina: string): void {
     const m = this.mir;
@@ -237,6 +282,16 @@ export class Telo {
       if (ny > maks) maks = ny;
     }
     return maks;
+  }
+
+  // Есть ли контакт с вертикальной стеной: 1 стена справа, -1 слева, 0 нет
+  stenaSboku(): number {
+    for (let i = this.ot; i < this.ot + this.n; i++) {
+      if (!this.mir.kontakt[i]) continue;
+      const nx = this.mir.kontNx[i] as number;
+      if (Math.abs(nx) > 0.9) return nx < 0 ? 1 : -1;
+    }
+    return 0;
   }
 
   vKontakte(): boolean {
@@ -299,4 +354,25 @@ export class Telo {
   get vKorke(): boolean {
     return this.korkaByla;
   }
+}
+
+function znak(ax: number, ay: number, bx: number, by: number, cx: number, cy: number): number {
+  return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+}
+
+function otrezkiPeresekayutsya(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number,
+  dx: number,
+  dy: number,
+): boolean {
+  const d1 = znak(cx, cy, dx, dy, ax, ay);
+  const d2 = znak(cx, cy, dx, dy, bx, by);
+  const d3 = znak(ax, ay, bx, by, cx, cy);
+  const d4 = znak(ax, ay, bx, by, dx, dy);
+  return d1 * d2 < 0 && d3 * d4 < 0;
 }

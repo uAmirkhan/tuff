@@ -94,6 +94,7 @@ if (komnata) {
 if (perf) for (let i = 0; i < 24; i++) statisty.push(new Telo(mir, 3 + i * 0.7, 3 + (i % 4) * 1.2));
 
 const vvod = new Vvod(document.body);
+vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
 const stsena = new Stsena();
 const hud = document.getElementById('hud') as HTMLDivElement;
 const ui = new Graphics();
@@ -134,6 +135,7 @@ async function start(): Promise<void> {
     nakoplen += Math.min(0.1, (now - last) / 1000);
     last = now;
     while (nakoplen >= MIR.shag) {
+      vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
       const t0 = performance.now();
       telo.primenit(nam, igra?.korkaSredy ?? false);

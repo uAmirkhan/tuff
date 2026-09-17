@@ -11,7 +11,8 @@ export type Sobytie =
   | { tip: 'vozrozhdenie' }
   | { tip: 'vyhod'; takty: number; ochki: number; serdca: number }
   | { tip: 'zaslonka'; id: string; otkryta: boolean }
-  | { tip: 'slomano'; poligon: number };
+  | { tip: 'slomano'; poligon: number }
+  | { tip: 'storozh'; prichina: string };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -135,8 +136,9 @@ export class Igra {
     const gr = this.ur.dannye.granicy;
     if (cy < gr.minY - 2 || cx < gr.minX - 5 || cx > gr.maxX + 5) this.umeret('падение');
     if (this.zhar <= 0) this.umeret(vVode ? 'вода' : 'шипы');
-    // сторожа тела
-    if (this.telo.ploshchad() < 0) this.telo.vosstanovit(cx, cy, 'выворачивание');
+    // сторожа тела: взрыв, выворачивание, самопересечение; событие в журнал и в события такта
+    const storozh = this.telo.storozha();
+    if (storozh) this.sobytiya.push({ tip: 'storozh', prichina: storozh });
   }
 
   private pereklyuchit(id: string, otkryt: boolean): void {
