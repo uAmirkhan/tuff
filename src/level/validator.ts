@@ -28,6 +28,8 @@ export function proveritUroven(u: Uroven): string[] {
       (!o.w || !o.h)
     )
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
+    if (o.tip === 'potok' && (!o.w || !o.h)) oshibki.push(`поток ${o.id ?? '?'} без размеров`);
+    if (o.tip === 'potok' && !o.silaX && !o.silaY) oshibki.push(`поток ${o.id ?? '?'} без силы`);
     if ((o.tip === 'yashchik' || o.tip === 'mayatnik') && (!o.w || !o.h))
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
     if (o.tip === 'mayatnik' && !(o.dlina && o.dlina > 0))

@@ -154,6 +154,28 @@ export class Stsena {
             }
             break;
           }
+          case 'potok': {
+            // поток: полупрозрачная зона со стрелками по направлению силы
+            if (!s.aktivna) break;
+            const m = this.masshtab;
+            g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * m, s.h * m);
+            g.fill({ color: 0xbfe0f4, alpha: 0.08 });
+            const l = Math.hypot(s.silaX, s.silaY) || 1;
+            const ux = s.silaX / l,
+              uy = s.silaY / l;
+            const faza = ((performance.now() / 600) % 1) * 0.8;
+            for (let i = 0; i < Math.max(1, Math.floor(s.w * 1.5)); i++) {
+              for (let j = 0; j < Math.max(1, Math.floor(s.h * 1.5)); j++) {
+                const px = s.x + ((i + 0.5) / Math.max(1, Math.floor(s.w * 1.5))) * s.w + ux * faza;
+                const py = s.y + ((j + 0.5) / Math.max(1, Math.floor(s.h * 1.5))) * s.h + uy * faza;
+                if (px < s.x || px > s.x + s.w || py < s.y || py > s.y + s.h) continue;
+                g.moveTo(this.ekX(px - ux * 0.15), this.ekY(py - uy * 0.15));
+                g.lineTo(this.ekX(px + ux * 0.15), this.ekY(py + uy * 0.15));
+              }
+            }
+            g.stroke({ width: 2, color: 0xbfe0f4, alpha: 0.35 });
+            break;
+          }
           case 'zaslonka':
             if (!s.aktivna) {
               g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);

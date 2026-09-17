@@ -32,6 +32,9 @@ export interface Sushchnost {
   pauza: number;
   chasticy: number[]; // углы твёрдого контейнера (контур)
   kontur: number; // индекс контура контейнера или -1
+  plavuchest: number;
+  silaX: number;
+  silaY: number;
 }
 
 export const KONTEYNER = {
@@ -196,7 +199,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       skorost: o.skorost ?? 1,
       zaderzhka: o.zaderzhka ?? 2,
       aktivna:
-        o.tip === 'lava' || o.tip === 'ship' || o.tip === 'voda'
+        o.tip === 'lava' || o.tip === 'ship' || o.tip === 'voda' || o.tip === 'potok'
           ? !(o.vyklyuchena ?? false)
           : false,
       sobrana: false,
@@ -212,6 +215,9 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       pauza: o.pauza ?? 0,
       chasticy: [],
       kontur: -1,
+      plavuchest: o.plavuchest ?? 1.5,
+      silaX: o.silaX ?? 0,
+      silaY: o.silaY ?? 0,
     };
     if (o.tip === 'yashchik' || o.tip === 'mayatnik') {
       // контейнер: четыре угла со всеми связями и контуром площади, как тело врага

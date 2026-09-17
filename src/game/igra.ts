@@ -2,7 +2,14 @@
 import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
 import { TroynoyKotyol } from './boss';
+import { MIR } from './config/telo';
 import { BOY, VRAGI } from './config/vragi';
+
+const MIR_G = MIR.gravitatsiya;
+const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
+// множители силы потока по материалу героя: Расплав парусит, Корка почти не летит
+const POTOK = { rasplav: 1.8, korka: 0.15, konteyner: 0.6 };
+
 import { ZHAR } from './config/zhar';
 import type { Namerenie, Telo } from './telo';
 import { Vrag } from './vrag';
@@ -63,6 +70,58 @@ export class Igra {
     if (this.gotovo) return;
     this.telo.schitatCentr();
     for (const v of this.vragi) v.dumat(this.telo.cx, this.telo.cy, this.takty);
+    this.silySredy();
+  }
+
+  // Плавучесть контейнеров в воде и зоны силы (поток). Сила задаётся сдвигом прошлой позиции:
+  // ускорение a за такт даёт скорость a·dt, то есть px -= a·dt².
+  private silySredy(): void {
+    const dt2 = (1 / 60) * (1 / 60);
+    const g = MIR_G;
+    const mir = this.mir;
+    for (const z of this.ur.sushchnosti) {
+      if (!z.aktivna) continue;
+      if (z.tip === 'voda') {
+        const verh = z.y + z.h;
+        for (const s of this.ur.sushchnosti) {
+          if (s.chasticy.length === 0 || s.plavuchest === 0) continue;
+          for (const p of s.chasticy) {
+            const x = mir.x[p] as number,
+              y = mir.y[p] as number;
+            if (x < z.x || x > z.x + z.w || y > verh || y < z.y) continue;
+            // подъём и вязкое сопротивление воды
+            mir.py[p] = (mir.py[p] as number) - g * s.plavuchest * dt2;
+            mir.px[p] =
+              (mir.px[p] as number) +
+              ((mir.x[p] as number) - (mir.px[p] as number)) * VODA_SOPROTIVLENIE;
+            mir.py[p] =
+              (mir.py[p] as number) +
+              ((mir.y[p] as number) - (mir.py[p] as number)) * VODA_SOPROTIVLENIE;
+          }
+        }
+      } else if (z.tip === 'potok') {
+        // герой: множитель по материалу; контейнеры и враги: как обычное тело
+        const sost = this.telo.sostoyanie;
+        const mn = sost === 'rasplav' ? POTOK.rasplav : sost === 'korka' ? POTOK.korka : 1;
+        this.tolknutChasticy(z, this.telo.ot, this.telo.n, mn);
+        for (const s of this.ur.sushchnosti)
+          if (s.chasticy.length)
+            this.tolknutChasticy(z, s.chasticy[0] as number, 4, POTOK.konteyner);
+        for (const v of this.vragi) if (v.zhiv) this.tolknutChasticy(z, v.ot, v.n, 1);
+      }
+    }
+  }
+
+  private tolknutChasticy(z: Sushchnost, ot: number, n: number, mn: number): void {
+    const dt2 = (1 / 60) * (1 / 60);
+    const mir = this.mir;
+    for (let p = ot; p < ot + n; p++) {
+      const x = mir.x[p] as number,
+        y = mir.y[p] as number;
+      if (x < z.x || x > z.x + z.w || y < z.y || y > z.y + z.h) continue;
+      mir.px[p] = (mir.px[p] as number) - z.silaX * mn * dt2;
+      mir.py[p] = (mir.py[p] as number) - z.silaY * mn * dt2;
+    }
   }
 
   // Вызывать после mir.shag() и telo.posle()
