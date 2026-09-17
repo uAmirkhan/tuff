@@ -10,6 +10,7 @@ export const MAX_KONTUROV = 256;
 export const SETKA = 2; // размер ячейки сетки отрезков в единицах
 export const MAX_YACHEEK = 65536;
 const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
+const KASANIE = 0.003; // зазор, в пределах которого частица считается касающейся отрезка
 const MAKS_RAZVEDENIE = 0.04; // предел разведения двух тел за подшаг
 const ZAPAS_TEL = 0.15; // запас вокруг прямоугольника контура при проверке близости тел
 const GLUBINA = 0.5; // глубина по умолчанию, с которой односторонний отрезок выталкивает сидящую внутри частицу
@@ -66,6 +67,14 @@ export class Mir {
   readonly oZhiv = new Uint8Array(MAX_OTREZKOV);
   readonly oOdnostor = new Uint8Array(MAX_OTREZKOV); // 1 = твёрдая сторона справа по ходу p1→p2, свободная слева
   readonly oGlubina = new Float64Array(MAX_OTREZKOV); // глубина выталкивания: у тонких плит меньше половины толщины
+  // Кинематика: скорость отрезка за такт (движется в подшагах, тело едет вместе с опорой)
+  // и скорость поверхности вдоль p1→p2 за такт (конвейер: отрезок стоит, опора тянет)
+  readonly oVX = new Float64Array(MAX_OTREZKOV);
+  readonly oVY = new Float64Array(MAX_OTREZKOV);
+  readonly oPoverh = new Float64Array(MAX_OTREZKOV);
+  private readonly dvizhushchiesya: number[] = [];
+  private psTek = 1; // подшагов в текущем такте, для переноса в контакте
+  readonly chKontur = new Int32Array(MAX_TOCHEK).fill(-1); // контур частицы или -1
   readonly hrupkost = new Float64Array(MAX_OTREZKOV); // 0 = неразрушим, иначе порог импульса удара
   readonly udar = new Float64Array(MAX_OTREZKOV); // накопленный импульс удара за такт
   slomano: number[] = [];
@@ -190,6 +199,88 @@ export class Mir {
     return i;
   }
 
+  // Скорость отрезка за такт: движение применяется в подшагах, тело в контакте едет вместе
+  zadatSkorostOtrezka(i: number, vx: number, vy: number): void {
+    this.oVX[i] = vx;
+    this.oVY[i] = vy;
+    if (!this.dvizhushchiesya.includes(i)) this.dvizhushchiesya.push(i);
+  }
+
+  // Скорость поверхности за такт вдоль p1→p2: конвейер
+  zadatPoverhnost(i: number, v: number): void {
+    this.oPoverh[i] = v;
+    if (!this.dvizhushchiesya.includes(i)) this.dvizhushchiesya.push(i);
+  }
+
+  // Перенос вместе с опорой: контур, хотя бы одна частица которого стоит на движущемся отрезке
+  // или на конвейере, сдвигается целиком (позиция и прошлая позиция) на средний перенос
+  // своих контактных частиц. Инерция при сходе с опоры не наследуется (грабли, BRIEF)
+  private readonly perenosX = new Float64Array(MAX_KONTUROV);
+  private readonly perenosY = new Float64Array(MAX_KONTUROV);
+  private readonly perenosN = new Int32Array(MAX_KONTUROV);
+  private perenosKonturov(): void {
+    if (this.dvizhushchiesya.length === 0 || this.c === 0) return;
+    for (let c = 0; c < this.c; c++) {
+      this.perenosX[c] = 0;
+      this.perenosY[c] = 0;
+      this.perenosN[c] = 0;
+    }
+    let est = false;
+    for (let i = 0; i < this.n; i++) {
+      if (!this.kontakt[i]) continue;
+      const c = this.chKontur[i] as number;
+      if (c < 0) continue;
+      const o = this.kontOtrezok[i] as number;
+      const vx = this.oVX[o] as number,
+        vy = this.oVY[o] as number,
+        pv = this.oPoverh[o] as number;
+      if (vx === 0 && vy === 0 && pv === 0) continue;
+      let cvx = vx / this.psTek,
+        cvy = vy / this.psTek;
+      if (pv !== 0) {
+        const ex = (this.oX2[o] as number) - (this.oX1[o] as number);
+        const ey = (this.oY2[o] as number) - (this.oY1[o] as number);
+        const l = Math.hypot(ex, ey) || 1;
+        cvx += (pv / this.psTek) * (ex / l);
+        cvy += (pv / this.psTek) * (ey / l);
+      }
+      this.perenosX[c] = (this.perenosX[c] as number) + cvx;
+      this.perenosY[c] = (this.perenosY[c] as number) + cvy;
+      this.perenosN[c] = (this.perenosN[c] as number) + 1;
+      est = true;
+    }
+    if (!est) return;
+    for (let c = 0; c < this.c; c++) {
+      const n = this.perenosN[c] as number;
+      if (n === 0) continue;
+      const dx = (this.perenosX[c] as number) / n,
+        dy = (this.perenosY[c] as number) / n;
+      const ot = this.cOt[c] as number,
+        kol = this.cN[c] as number;
+      for (let p = ot; p < ot + kol; p++) {
+        this.x[p] = (this.x[p] as number) + dx;
+        this.y[p] = (this.y[p] as number) + dy;
+        this.px[p] = (this.px[p] as number) + dx;
+        this.py[p] = (this.py[p] as number) + dy;
+      }
+    }
+  }
+
+  private dvigatOtrezki(ps: number): void {
+    let sdvig = false;
+    for (const o of this.dvizhushchiesya) {
+      const vx = (this.oVX[o] as number) / ps,
+        vy = (this.oVY[o] as number) / ps;
+      if (vx === 0 && vy === 0) continue;
+      this.oX1[o] = (this.oX1[o] as number) + vx;
+      this.oY1[o] = (this.oY1[o] as number) + vy;
+      this.oX2[o] = (this.oX2[o] as number) + vx;
+      this.oY2[o] = (this.oY2[o] as number) + vy;
+      sdvig = true;
+    }
+    if (sdvig) this.setkaGryaznaya = true;
+  }
+
   ubratOtrezok(i: number): void {
     this.oZhiv[i] = 0;
     this.setkaGryaznaya = true;
@@ -247,6 +338,7 @@ export class Mir {
     this.cZhest[i] = zhest;
     this.cKazhdyy[i] = kazhdyy;
     this.cKontakt[i] = 1;
+    for (let p = ot; p < ot + n; p++) this.chKontur[p] = i;
     return i;
   }
 
@@ -366,11 +458,14 @@ export class Mir {
       this.kontaktTel[i] = 0;
       this.kontaktZveno[i] = -1;
     }
+    this.psTek = ps;
     for (let sub = 0; sub < ps; sub++) {
+      this.dvigatOtrezki(ps);
       this.relaksatsiya(sub);
       this.ploshchadi(sub);
       this.vremennye();
       this.kontakty();
+      this.perenosKonturov();
       this.kontaktyTel();
       this.kontaktyZvenyev();
     }
@@ -883,19 +978,34 @@ export class Mir {
       // частица, которая в начале такта была снаружи, возвращается наружу с любой глубины;
       // сидевшая внутри выталкивается только у самой грани, иначе тонкая плита ловит её обеими гранями
       const byloSnaruzhi = sPrev >= r - 1e-6;
-      if (sNow < r && (byloSnaruzhi || sNow > -(this.oGlubina[o] as number))) {
+      // касание с зазором: лежащая частица после выталкивания стоит ровно на r и без зазора
+      // теряла бы контакт на всех подшагах, кроме первого; движущаяся опора тогда не переносит
+      if (sNow < r + KASANIE && (byloSnaruzhi || sNow > -(this.oGlubina[o] as number))) {
         const u = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
         if (u >= 0 && u <= 1) {
-          const pen = r - sNow;
+          const pen = Math.max(0, r - sNow);
           this.x[i] = x + snx * pen;
           this.y[i] = y + sny * pen;
           this.udar[o] =
             (this.udar[o] as number) + Math.max(0, sPrev - sNow) * (this.massa[i] as number);
+          // перенос вместе с опорой: движущийся отрезок и поверхность конвейера сдвигают
+          // и позицию, и прошлую позицию, скорость тела относительно опоры не меняется.
+          // Инерция при сходе с опоры не наследуется (грабли, BRIEF)
+          const cvx =
+            (this.oVX[o] as number) / this.psTek +
+            ((this.oPoverh[o] as number) / this.psTek) * (ex / l0);
+          const cvy =
+            (this.oVY[o] as number) / this.psTek +
+            ((this.oPoverh[o] as number) / this.psTek) * (ey / l0);
+          // сам перенос делается целым контуром после контактов (perenosKonturov):
+          // перенос одних нижних частиц заставляет кольцо катиться назад, как шар на тележке
+          const perenos = Math.hypot(cvx, cvy);
           const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
           const vx = (this.x[i] as number) - pxi;
           const vy = (this.y[i] as number) - pyi;
           const vt = vx * -sny + vy * snx;
-          const maxGas = mu * Math.max(0, pen);
+          // запас трения: глубина вдавливания плюс перенос, иначе движущаяся опора уезжает из-под тела
+          const maxGas = mu * Math.max(0, pen) + perenos;
           const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
           this.x[i] = (this.x[i] as number) - -sny * gas;
           this.y[i] = (this.y[i] as number) - snx * gas;

@@ -66,6 +66,33 @@ export class Igra {
   }
 
   // Вызывать после mir.shag() и telo.posle()
+  // Поршни: цель по циклу «пауза, ход, пауза, обратно», скорость на такт = цель минус текущее
+  private dvigatPorshni(): void {
+    const t = this.takty / 60;
+    for (const s of this.ur.sushchnosti) {
+      if (s.tip !== 'porshen' || s.otrezki.length === 0) continue;
+      const P = s.period,
+        Q = s.pauza,
+        polov = P / 2,
+        hod = Math.max(1e-6, polov - Q);
+      const u = (((t + s.faza * P) % P) + P) % P;
+      let f: number;
+      if (u < polov) f = u < Q ? 0 : Math.min(1, (u - Q) / hod);
+      else {
+        const v = u - polov;
+        f = v < Q ? 1 : Math.max(0, 1 - (v - Q) / hod);
+      }
+      const cx = s.x0 + s.hodX * f,
+        cy = s.y0 + s.hodY * f;
+      const o0 = s.otrezki[0] as number;
+      const vx = cx - (this.mir.oX1[o0] as number),
+        vy = cy - (this.mir.oY1[o0] as number);
+      for (const o of s.otrezki) this.mir.zadatSkorostOtrezka(o, vx, vy);
+      s.x = cx;
+      s.y = cy;
+    }
+  }
+
   takt(nam: Namerenie): void {
     if (this.gotovo) return;
     this.takty++;
@@ -74,6 +101,7 @@ export class Igra {
     const cx = this.telo.cx,
       cy = this.telo.cy;
     const g = this.telo.gabarity();
+    this.dvigatPorshni();
     // Среда
     let vLave = false,
       vShipah = false,

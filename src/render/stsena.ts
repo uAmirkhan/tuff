@@ -132,6 +132,28 @@ export class Stsena {
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);
             g.fill({ color: 0xbfd8e6, alpha: 0.7 });
             break;
+          case 'porshen':
+          case 'konveyer': {
+            // положение берём из первого отрезка: он сдвигается в подшагах
+            const o0 = s.otrezki[0] as number;
+            const px = mir.oX1[o0] as number,
+              py = mir.oY1[o0] as number;
+            g.rect(this.ekX(px), this.ekY(py + s.h), s.w * this.masshtab, s.h * this.masshtab);
+            g.fill({ color: s.tip === 'konveyer' ? 0x4a4f5a : 0x6a6f7a });
+            g.rect(this.ekX(px), this.ekY(py + s.h), s.w * this.masshtab, s.h * this.masshtab);
+            g.stroke({ width: 2, color: 0x9aa0ad });
+            if (s.tip === 'konveyer') {
+              // бегущие штрихи по верхней грани
+              const sdvig = ((performance.now() / 1000) * s.skorost) % 0.5;
+              for (let x = px - sdvig; x < px + s.w; x += 0.5) {
+                if (x < px) continue;
+                g.moveTo(this.ekX(x), this.ekY(py + s.h));
+                g.lineTo(this.ekX(Math.min(px + s.w, x + 0.2)), this.ekY(py + s.h));
+              }
+              g.stroke({ width: 3, color: 0xffb347, alpha: 0.6 });
+            }
+            break;
+          }
           case 'zaslonka':
             if (!s.aktivna) {
               g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);

@@ -19,10 +19,19 @@ export function proveritUroven(u: Uroven): string[] {
     if ((o.tip === 'plita' || o.tip === 'rychag') && (!o.cel || !ids.has(o.cel)))
       oshibki.push(`${o.tip} ${o.id ?? '?'} без цели или цель не найдена`);
     if (
-      (o.tip === 'lava' || o.tip === 'ship' || o.tip === 'voda' || o.tip === 'zaslonka') &&
+      (o.tip === 'lava' ||
+        o.tip === 'ship' ||
+        o.tip === 'voda' ||
+        o.tip === 'zaslonka' ||
+        o.tip === 'porshen' ||
+        o.tip === 'konveyer') &&
       (!o.w || !o.h)
     )
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
+    if (o.tip === 'porshen' && (!o.period || o.period <= 0))
+      oshibki.push(`поршень ${o.id ?? '?'} без периода`);
+    if (o.tip === 'porshen' && (o.pauza ?? 0) * 2 >= (o.period ?? 0))
+      oshibki.push(`поршень ${o.id ?? '?'}: паузы длиннее периода`);
     if (o.tip === 'cep' && o.zvenyev !== undefined && o.zvenyev < 2)
       oshibki.push(`цепь ${o.id ?? '?'} короче двух звеньев`);
     if (

@@ -22,6 +22,14 @@ export interface Sushchnost {
   zaderzhka: number;
   zvenya: number[]; // частицы звеньев цепи
   svyazi: number[]; // связи цепи
+  // кинематика поршня: начало, ход, цикл
+  x0: number;
+  y0: number;
+  hodX: number;
+  hodY: number;
+  period: number;
+  faza: number;
+  pauza: number;
 }
 
 export const CEP: {
@@ -158,6 +166,13 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       otrezki: [],
       zvenya: [],
       svyazi: [],
+      x0: o.x,
+      y0: o.y,
+      hodX: o.hodX ?? 0,
+      hodY: o.hodY ?? 0,
+      period: o.period ?? 4,
+      faza: o.faza ?? 0,
+      pauza: o.pauza ?? 0,
     };
     if (o.tip === 'cep') {
       const n = Math.max(2, o.zvenyev ?? 8);
@@ -200,6 +215,23 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
         mir.sRazryv[sv] = raz;
         s.svyazi.push(sv);
       }
+    }
+    if (o.tip === 'porshen' || o.tip === 'konveyer') {
+      // твёрдый прямоугольник из четырёх односторонних отрезков (как заслонка), металл:
+      // верхняя грань идёт слева направо, твёрдая сторона снизу
+      const x1 = o.x,
+        y1 = o.y,
+        x2 = o.x + (o.w ?? 0),
+        y2 = o.y + (o.h ?? 0);
+      const mat = SVOYSTVA_MATERIALA.metall;
+      const tr = o.tip === 'konveyer' ? 1 : mat.trenie; // конвейер держит, чтобы тянуть
+      s.otrezki.push(
+        mir.dobavitOtrezok(x1, y1, x1, y2, tr, mat.sherohovat, 1),
+        mir.dobavitOtrezok(x1, y2, x2, y2, tr, mat.sherohovat, 1),
+        mir.dobavitOtrezok(x2, y2, x2, y1, tr, mat.sherohovat, 1),
+        mir.dobavitOtrezok(x2, y1, x1, y1, tr, mat.sherohovat, 1),
+      );
+      if (o.tip === 'konveyer') mir.zadatPoverhnost(s.otrezki[1] as number, (o.skorost ?? 1) / 60);
     }
     if (o.tip === 'zaslonka') {
       // заслонка: замкнутый прямоугольник из четырёх односторонних отрезков, обход по часовой
