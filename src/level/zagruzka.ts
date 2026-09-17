@@ -35,6 +35,9 @@ export interface Sushchnost {
   plavuchest: number;
   silaX: number;
   silaY: number;
+  os: number;
+  poRaspisaniyu: boolean; // у зоны задан период: включена первую половину цикла
+  vklyuchenaVRaspisanii: boolean; // зона по расписанию: исходное состояние aktivna без учёта цикла
 }
 
 export const KONTEYNER = {
@@ -218,6 +221,9 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       plavuchest: o.plavuchest ?? 1.5,
       silaX: o.silaX ?? 0,
       silaY: o.silaY ?? 0,
+      os: o.os ?? 0.5,
+      poRaspisaniyu: o.period !== undefined,
+      vklyuchenaVRaspisanii: !(o.vyklyuchena ?? false),
     };
     if (o.tip === 'yashchik' || o.tip === 'mayatnik') {
       // контейнер: четыре угла со всеми связями и контуром площади, как тело врага
@@ -253,6 +259,23 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
           mir.sRazryv[sv] = raz;
           s.svyazi.push(sv);
         }
+      }
+    }
+    if (o.tip === 'koromyslo') {
+      // балка как контейнер, ось: неподвижная частица, привязанная ко всем углам на длину до оси
+      const w = o.w ?? 3,
+        h = o.h ?? 0.3;
+      const os = o.os ?? 0.5;
+      const cx = o.x + (0.5 - os) * w,
+        cy = o.y;
+      s.chasticy = postroitKonteyner(mir, cx, cy, w, h, o.massa ?? KONTEYNER.massa);
+      s.kontur = mir.dobavitKontur(s.chasticy[0] as number, 4, KONTEYNER.obyom, 1);
+      const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 0);
+      mir.gravMul[a] = 0;
+      s.zvenya.push(a);
+      for (const ugol of s.chasticy) {
+        const sv = mir.dobavitSvyaz(a, ugol, KONTEYNER.zhestkost, 1);
+        s.svyazi.push(sv);
       }
     }
     if (o.tip === 'cep') {

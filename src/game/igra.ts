@@ -125,6 +125,17 @@ export class Igra {
   }
 
   // Вызывать после mir.shag() и telo.posle()
+  // Зоны по расписанию: включены первую половину периода, выключены вторую (промывка, вентилятор)
+  private raspisanieZon(): void {
+    const t = this.takty / 60;
+    for (const s of this.ur.sushchnosti) {
+      if (s.tip !== 'lava' && s.tip !== 'voda' && s.tip !== 'potok' && s.tip !== 'ship') continue;
+      if (!s.poRaspisaniyu || !(s.period > 0)) continue;
+      const u = (((t + s.faza * s.period) % s.period) + s.period) % s.period;
+      s.aktivna = s.vklyuchenaVRaspisanii && u < s.period / 2;
+    }
+  }
+
   // Поршни: цель по циклу «пауза, ход, пауза, обратно», скорость на такт = цель минус текущее
   private dvigatPorshni(): void {
     const t = this.takty / 60;
@@ -161,6 +172,7 @@ export class Igra {
       cy = this.telo.cy;
     const g = this.telo.gabarity();
     this.dvigatPorshni();
+    this.raspisanieZon();
     // Среда
     let vLave = false,
       vShipah = false,

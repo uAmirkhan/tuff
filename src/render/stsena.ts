@@ -183,6 +183,7 @@ export class Stsena {
             }
             break;
           case 'yashchik':
+          case 'koromyslo':
           case 'mayatnik': {
             // контейнер по углам, цепь маятника как у цепи
             if (s.chasticy.length === 4) {
@@ -206,6 +207,13 @@ export class Stsena {
               g.stroke({ width: 2, color: 0x9aa0ad });
             }
             if (s.tip === 'mayatnik') this.risovatCep(mir, s);
+            if (s.tip === 'koromyslo') {
+              // ось
+              g.circle(this.ekX(s.x), this.ekY(s.y), 0.09 * this.masshtab);
+              g.fill({ color: 0x2a1c17 });
+              g.circle(this.ekX(s.x), this.ekY(s.y), 0.09 * this.masshtab);
+              g.stroke({ width: 2, color: 0xc9a36b });
+            }
             break;
           }
           case 'cep':

@@ -30,6 +30,14 @@ export function proveritUroven(u: Uroven): string[] {
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
     if (o.tip === 'potok' && (!o.w || !o.h)) oshibki.push(`поток ${o.id ?? '?'} без размеров`);
     if (o.tip === 'potok' && !o.silaX && !o.silaY) oshibki.push(`поток ${o.id ?? '?'} без силы`);
+    if (o.tip === 'koromyslo' && (!o.w || !o.h))
+      oshibki.push(`коромысло ${o.id ?? '?'} без размеров`);
+    if (
+      (o.tip === 'lava' || o.tip === 'voda' || o.tip === 'potok') &&
+      o.period !== undefined &&
+      o.period <= 0
+    )
+      oshibki.push(`${o.tip} ${o.id ?? '?'}: период должен быть больше нуля`);
     if ((o.tip === 'yashchik' || o.tip === 'mayatnik') && (!o.w || !o.h))
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
     if (o.tip === 'mayatnik' && !(o.dlina && o.dlina > 0))
