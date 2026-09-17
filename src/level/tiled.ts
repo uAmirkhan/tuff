@@ -67,6 +67,7 @@ const PRYAMOUGOLNYE: TipObekta[] = [
   'obval',
   'porshen',
   'konveyer',
+  'yashchik',
 ];
 // Поля Obekt, которые переносятся свойствами как есть
 const POLYA_OBEKTA = [
@@ -85,7 +86,11 @@ const POLYA_OBEKTA = [
   'period',
   'faza',
   'pauza',
+  'massa',
+  'dlina',
 ] as const;
+// точечные объекты с размерами в свойствах (маятник: якорь точкой, контейнер размерами)
+const RAZMERY_V_SVOYSTVAH: TipObekta[] = ['mayatnik'];
 const POLYA_UROVNYA = [
   'id',
   'nazvanie',
@@ -183,6 +188,10 @@ export function izTiled(m: TiledKarta): Uroven {
       for (const pole of POLYA_OBEKTA) {
         if (ps[pole] !== undefined) (ob as unknown as Record<string, unknown>)[pole] = ps[pole];
       }
+      if (RAZMERY_V_SVOYSTVAH.includes(tip)) {
+        if (typeof ps.w === 'number') ob.w = ps.w;
+        if (typeof ps.h === 'number') ob.h = ps.h;
+      }
       obekty.push(ob);
     }
   }
@@ -278,6 +287,8 @@ export function vTiled(u: Uroven, sh = 32): TiledKarta {
       o.point = true;
     }
     const props = vSvoystva(ob as unknown as Record<string, unknown>, POLYA_OBEKTA);
+    if (RAZMERY_V_SVOYSTVAH.includes(ob.tip))
+      props.push(...vSvoystva(ob as unknown as Record<string, unknown>, ['w', 'h']));
     if (props.length) o.properties = props;
     obekty.push(o);
   }

@@ -4,7 +4,7 @@ import type { TroynoyKotyol } from '../game/boss';
 import type { Telo } from '../game/telo';
 import type { Vrag } from '../game/vrag';
 import type { Uroven } from '../level/format';
-import type { ZagruzhennyyUroven } from '../level/zagruzka';
+import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
 import { Fon } from './fon';
 
@@ -160,28 +160,35 @@ export class Stsena {
               g.fill({ color: 0x8a8a99 });
             }
             break;
-          case 'cep': {
-            // звенья: кружки, связи: линии между соседями, если живы
-            for (let i = 0; i < s.svyazi.length; i++) {
-              const sv = s.svyazi[i] as number;
-              if (!mir.sZhiva[sv]) continue;
-              const a = mir.sA[sv] as number,
-                b = mir.sB[sv] as number;
-              g.moveTo(this.ekX(mir.x[a] as number), this.ekY(mir.y[a] as number));
-              g.lineTo(this.ekX(mir.x[b] as number), this.ekY(mir.y[b] as number));
-              g.stroke({ width: 5, color: 0xb08a5a });
+          case 'yashchik':
+          case 'mayatnik': {
+            // контейнер по углам, цепь маятника как у цепи
+            if (s.chasticy.length === 4) {
+              for (let i = 0; i < 4; i++) {
+                const p = s.chasticy[i] as number;
+                const px = this.ekX(mir.x[p] as number),
+                  py = this.ekY(mir.y[p] as number);
+                if (i === 0) g.moveTo(px, py);
+                else g.lineTo(px, py);
+              }
+              g.closePath();
+              g.fill({ color: 0x5a5f6a });
+              for (let i = 0; i < 4; i++) {
+                const p = s.chasticy[i] as number;
+                const px = this.ekX(mir.x[p] as number),
+                  py = this.ekY(mir.y[p] as number);
+                if (i === 0) g.moveTo(px, py);
+                else g.lineTo(px, py);
+              }
+              g.closePath();
+              g.stroke({ width: 2, color: 0x9aa0ad });
             }
-            for (const q of s.zvenya) {
-              g.circle(
-                this.ekX(mir.x[q] as number),
-                this.ekY(mir.y[q] as number),
-                0.12 * this.masshtab,
-              );
-              g.fill({ color: 0xc9a36b });
-              g.stroke({ width: 1.5, color: 0x3a2a20 });
-            }
+            if (s.tip === 'mayatnik') this.risovatCep(mir, s);
             break;
           }
+          case 'cep':
+            this.risovatCep(mir, s);
+            break;
           case 'ispytanie': {
             // значок обучения: иконка способности над препятствием, пока её не применили (02-gdd, раздел 13)
             const sp =
@@ -388,6 +395,27 @@ export class Stsena {
         }
         k.stroke({ width: 1.5, color: 0xffb347, alpha: 0.5 });
       }
+    }
+  }
+
+  // Цепь: связи линиями, звенья кружками
+  private risovatCep(mir: Mir, s: Sushchnost): void {
+    const g = this.g;
+
+    // звенья: кружки, связи: линии между соседями, если живы
+    for (let i = 0; i < s.svyazi.length; i++) {
+      const sv = s.svyazi[i] as number;
+      if (!mir.sZhiva[sv]) continue;
+      const a = mir.sA[sv] as number,
+        b = mir.sB[sv] as number;
+      g.moveTo(this.ekX(mir.x[a] as number), this.ekY(mir.y[a] as number));
+      g.lineTo(this.ekX(mir.x[b] as number), this.ekY(mir.y[b] as number));
+      g.stroke({ width: 5, color: 0xb08a5a });
+    }
+    for (const q of s.zvenya) {
+      g.circle(this.ekX(mir.x[q] as number), this.ekY(mir.y[q] as number), 0.12 * this.masshtab);
+      g.fill({ color: 0xc9a36b });
+      g.stroke({ width: 1.5, color: 0x3a2a20 });
     }
   }
 

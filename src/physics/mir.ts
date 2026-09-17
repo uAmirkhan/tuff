@@ -576,6 +576,7 @@ export class Mir {
   // Коррекция делится по обратным массам. Итог: тела не проходят друг сквозь друга.
   readonly kontaktTel = new Uint8Array(MAX_TOCHEK); // 1 = частица касалась другого тела в такте
   readonly kontaktTelKontur = new Int32Array(MAX_TOCHEK); // индекс контура, которого коснулись
+  readonly kontaktTelChastica = new Int32Array(MAX_TOCHEK); // ближайшая частица чужого контура (для Вязкости к контейнеру)
   readonly udarTel = new Float64Array(MAX_KONTUROV); // импульс, полученный контуром от других тел за такт
   readonly cKontakt = new Uint8Array(MAX_KONTUROV); // 1: контур сталкивается с другими телами
 
@@ -832,6 +833,7 @@ export class Mir {
     this.y[q2] = (this.y[q2] as number) - ny * dq * t;
     this.kontaktTel[p] = 1;
     this.kontaktTelKontur[p] = b;
+    this.kontaktTelChastica[p] = q1;
     this.udarTel[b] = (this.udarTel[b] as number) + pen * (this.massa[p] as number);
   }
 
