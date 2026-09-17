@@ -109,6 +109,17 @@ export class Telo {
       m.sKazhdyy[s] = c.kazhdyy;
     }
     this.vybrosByl = nam.vybros;
+    this.sost = korka
+      ? 'korka'
+      : nam.rasplav
+        ? 'rasplav'
+        : nam.vyazkost
+          ? 'vyazkost'
+          : nam.vybros
+            ? 'vybros'
+            : 'obychnoe';
+    if (nam.dx > 0.2) this.napravlenie = 1;
+    else if (nam.dx < -0.2) this.napravlenie = -1;
     // Расплав рвёт Вязкость
     if (nam.rasplav || !nam.vyazkost) m.otlepitVse(this.ot, this.ot + this.n);
     // Ползание: якоря прилипших точек сдвигаются вдоль опоры по вводу
@@ -273,6 +284,13 @@ export class Telo {
       s += Math.sqrt(dx * dx + dy * dy);
     }
     return s;
+  }
+
+  // Состояние материала для отрисовки и звука: приоритет корка, расплав, вязкость, выброс
+  private sost: 'obychnoe' | 'vyazkost' | 'rasplav' | 'korka' | 'vybros' = 'obychnoe';
+  napravlenie = 1; // -1 влево, 1 вправо, куда смотрят глаза
+  get sostoyanie(): 'obychnoe' | 'vyazkost' | 'rasplav' | 'korka' | 'vybros' {
+    return this.sost;
   }
 
   get vVybrose(): boolean {
