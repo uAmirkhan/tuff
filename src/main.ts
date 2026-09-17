@@ -24,6 +24,10 @@ import { Stsena } from './render/stsena';
 const params = new URLSearchParams(location.search);
 const komnata = params.get('komnata') === '1';
 const perf = params.get('perf') === '1';
+// ?chisto=1: без отладочного текста и сенсорных кнопок, для кадров на страницу порталов
+const chisto = params.get('chisto') === '1';
+// сенсорные кнопки рисуются на устройствах с касанием или после первого касания
+const estKasanie = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
 
 const hranilishche = new HranilishcheBrauzera();
 const progress = zagruzitProgress(hranilishche);
@@ -230,7 +234,8 @@ let taktMs = 0;
 
 function risovatUi(): void {
   ui.clear();
-  for (const b of vvod.geometriyaKnopok()) {
+  if (chisto) return;
+  if (estKasanie || vvod.tachAktiven) for (const b of vvod.geometriyaKnopok()) {
     const aktivna = vvod.nam[b.k] as boolean;
     ui.circle(b.x, b.y, b.r);
     ui.fill({ color: aktivna ? 0xffb347 : 0xffffff, alpha: aktivna ? 0.6 : 0.18 });
@@ -265,6 +270,7 @@ async function start(): Promise<void> {
     analitika.sobytie('platform_error', { tekst: String(e) });
   }
   menyuKnopka.textContent = t(yazyk, 'urovni');
+  if (chisto) menyuKnopka.style.display = 'none';
   (document.getElementById('menyu-zagolovok') as HTMLElement).textContent = t(yazyk, 'mir1');
   menyuZakryt.textContent = t(yazyk, 'igrat');
   knopkaDalshe.textContent = t(yazyk, 'dalshe');
@@ -358,7 +364,7 @@ async function start(): Promise<void> {
         ? `${t(yazyk, 'vremya')} ${(igra.takty / 60).toFixed(1)}  ${t(yazyk, 'vysota')} ${igra.maksVysota.toFixed(1)}  ${t(yazyk, 'padenie')} ${igra.dlinneysheePadenie.toFixed(1)}`
         : `${t(yazyk, 'zhar')} ${igra.zhar.toFixed(0)}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/3  ${t(yazyk, 'smerti')} ${igra.smerti}`
       : '';
-    hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
+    if (!chisto) hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
   });
 }
 
