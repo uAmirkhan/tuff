@@ -1,0 +1,368 @@
+// Решатель частиц и связей. Интегрирование Верле, релаксация связей подшагами,
+// контакт частиц с отрезками. Ничего не знает об игре.
+// Данные в типизированных массивах, в такте память не выделяется.
+
+export const MAX_TOCHEK = 2048;
+export const MAX_SVYAZEY = 8192;
+export const MAX_OTREZKOV = 4096;
+export const MAX_VREMENNYH = 512;
+
+export interface ParametryMira {
+  shag: number;
+  podshagov: number;
+  gravitatsiya: number;
+  maxSkorost: number;
+}
+
+export class Mir {
+  // Частицы
+  n = 0;
+  readonly x = new Float64Array(MAX_TOCHEK);
+  readonly y = new Float64Array(MAX_TOCHEK);
+  readonly px = new Float64Array(MAX_TOCHEK);
+  readonly py = new Float64Array(MAX_TOCHEK);
+  readonly massa = new Float64Array(MAX_TOCHEK);
+  readonly gravMul = new Float64Array(MAX_TOCHEK);
+  readonly trenie = new Float64Array(MAX_TOCHEK);
+  readonly radius = new Float64Array(MAX_TOCHEK);
+  readonly dempfer = new Float64Array(MAX_TOCHEK);
+  // Контакт за такт: нормаль последнего контакта и флаг
+  readonly kontakt = new Uint8Array(MAX_TOCHEK);
+  readonly kontNx = new Float64Array(MAX_TOCHEK);
+  readonly kontNy = new Float64Array(MAX_TOCHEK);
+  readonly kontOtrezok = new Int32Array(MAX_TOCHEK);
+  readonly kontX = new Float64Array(MAX_TOCHEK);
+  readonly kontY = new Float64Array(MAX_TOCHEK);
+
+  // Связи: между двумя частицами
+  m = 0;
+  readonly sA = new Int32Array(MAX_SVYAZEY);
+  readonly sB = new Int32Array(MAX_SVYAZEY);
+  readonly sDlina = new Float64Array(MAX_SVYAZEY);
+  readonly sZhest = new Float64Array(MAX_SVYAZEY);
+  readonly sKazhdyy = new Int32Array(MAX_SVYAZEY); // релаксировать на каждом k-м подшаге
+  readonly sZhiva = new Uint8Array(MAX_SVYAZEY);
+
+  // Статические отрезки уровня
+  k = 0;
+  readonly oX1 = new Float64Array(MAX_OTREZKOV);
+  readonly oY1 = new Float64Array(MAX_OTREZKOV);
+  readonly oX2 = new Float64Array(MAX_OTREZKOV);
+  readonly oY2 = new Float64Array(MAX_OTREZKOV);
+  readonly oTrenie = new Float64Array(MAX_OTREZKOV);
+  readonly oSherohovat = new Uint8Array(MAX_OTREZKOV); // 1 = Вязкость держит
+  readonly oZhiv = new Uint8Array(MAX_OTREZKOV);
+
+  // Временные связи Вязкости: частица к точке на отрезке
+  v = 0;
+  readonly vTochka = new Int32Array(MAX_VREMENNYH);
+  readonly vOtrezok = new Int32Array(MAX_VREMENNYH);
+  readonly vDolya = new Float64Array(MAX_VREMENNYH); // положение якоря вдоль отрезка
+  readonly vPorog = new Float64Array(MAX_VREMENNYH);
+  readonly vZhiva = new Uint8Array(MAX_VREMENNYH);
+  readonly vPoTochke = new Int32Array(MAX_TOCHEK); // индекс живой связи для частицы или -1
+
+  takt = 0;
+  zhurnal: string[] = [];
+  otbrosheno = 0;
+
+  constructor(readonly p: ParametryMira) {
+    this.vPoTochke.fill(-1);
+  }
+
+  dobavitTochku(
+    x: number,
+    y: number,
+    massa: number,
+    radius: number,
+    trenie: number,
+    dempfer: number,
+  ): number {
+    const i = this.n++;
+    if (i >= MAX_TOCHEK) throw new Error('переполнение частиц');
+    this.x[i] = x;
+    this.y[i] = y;
+    this.px[i] = x;
+    this.py[i] = y;
+    this.massa[i] = massa;
+    this.gravMul[i] = 1;
+    this.trenie[i] = trenie;
+    this.radius[i] = radius;
+    this.dempfer[i] = dempfer;
+    this.kontakt[i] = 0;
+    this.vPoTochke[i] = -1;
+    return i;
+  }
+
+  dobavitSvyaz(a: number, b: number, zhest: number, kazhdyy: number, dlina?: number): number {
+    const i = this.m++;
+    if (i >= MAX_SVYAZEY) throw new Error('переполнение связей');
+    this.sA[i] = a;
+    this.sB[i] = b;
+    const dx = (this.x[b] as number) - (this.x[a] as number);
+    const dy = (this.y[b] as number) - (this.y[a] as number);
+    this.sDlina[i] = dlina ?? Math.sqrt(dx * dx + dy * dy);
+    this.sZhest[i] = zhest;
+    this.sKazhdyy[i] = kazhdyy;
+    this.sZhiva[i] = 1;
+    return i;
+  }
+
+  dobavitOtrezok(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    trenie = 1,
+    sherohovat = 1,
+  ): number {
+    const i = this.k++;
+    if (i >= MAX_OTREZKOV) throw new Error('переполнение отрезков');
+    this.oX1[i] = x1;
+    this.oY1[i] = y1;
+    this.oX2[i] = x2;
+    this.oY2[i] = y2;
+    this.oTrenie[i] = trenie;
+    this.oSherohovat[i] = sherohovat;
+    this.oZhiv[i] = 1;
+    return i;
+  }
+
+  ubratOtrezok(i: number): void {
+    this.oZhiv[i] = 0;
+    for (let j = 0; j < this.v; j++) {
+      if (this.vZhiva[j] && this.vOtrezok[j] === i) this.razorvatVremennuyu(j);
+    }
+  }
+
+  // Вязкость: создать связь частицы с текущей точкой контакта. Возвращает индекс или -1.
+  prilepit(tochka: number, porog: number): number {
+    if (this.vPoTochke[tochka] !== -1) return this.vPoTochke[tochka] as number;
+    if (!this.kontakt[tochka]) return -1;
+    const o = this.kontOtrezok[tochka] as number;
+    if (!this.oSherohovat[o]) return -1;
+    // ищем свободный слот
+    let slot = -1;
+    for (let j = 0; j < this.v; j++)
+      if (!this.vZhiva[j]) {
+        slot = j;
+        break;
+      }
+    if (slot === -1) {
+      if (this.v >= MAX_VREMENNYH) {
+        this.otbrosheno++;
+        return -1;
+      }
+      slot = this.v++;
+    }
+    const x1 = this.oX1[o] as number,
+      y1 = this.oY1[o] as number;
+    const dx = (this.oX2[o] as number) - x1,
+      dy = (this.oY2[o] as number) - y1;
+    const dl = dx * dx + dy * dy;
+    const t =
+      dl > 0
+        ? (((this.kontX[tochka] as number) - x1) * dx +
+            ((this.kontY[tochka] as number) - y1) * dy) /
+          dl
+        : 0;
+    this.vTochka[slot] = tochka;
+    this.vOtrezok[slot] = o;
+    this.vDolya[slot] = t < 0 ? 0 : t > 1 ? 1 : t;
+    this.vPorog[slot] = porog;
+    this.vZhiva[slot] = 1;
+    this.vPoTochke[tochka] = slot;
+    return slot;
+  }
+
+  razorvatVremennuyu(j: number): void {
+    if (!this.vZhiva[j]) return;
+    this.vZhiva[j] = 0;
+    this.vPoTochke[this.vTochka[j] as number] = -1;
+  }
+
+  otlepitVse(ot: number, do_: number): void {
+    for (let i = ot; i < do_; i++) {
+      const j = this.vPoTochke[i] as number;
+      if (j !== -1) this.razorvatVremennuyu(j);
+    }
+  }
+
+  shag(): void {
+    const dt = this.p.shag;
+    const g = this.p.gravitatsiya * dt * dt;
+    const maxV = this.p.maxSkorost;
+    // 1. Интегрирование Верле
+    for (let i = 0; i < this.n; i++) {
+      const x = this.x[i] as number,
+        y = this.y[i] as number;
+      let vx = (x - (this.px[i] as number)) * (this.dempfer[i] as number);
+      let vy = (y - (this.py[i] as number)) * (this.dempfer[i] as number);
+      vy -= g * (this.gravMul[i] as number);
+      const s = vx * vx + vy * vy;
+      if (s > maxV * maxV) {
+        const f = maxV / Math.sqrt(s);
+        vx *= f;
+        vy *= f;
+      }
+      this.px[i] = x;
+      this.py[i] = y;
+      this.x[i] = x + vx;
+      this.y[i] = y + vy;
+      this.kontakt[i] = 0;
+    }
+    // 2. Подшаги
+    const ps = this.p.podshagov;
+    for (let sub = 0; sub < ps; sub++) {
+      this.relaksatsiya(sub);
+      this.vremennye();
+      this.kontakty();
+    }
+    this.takt++;
+  }
+
+  private relaksatsiya(sub: number): void {
+    for (let j = 0; j < this.m; j++) {
+      if (!this.sZhiva[j]) continue;
+      const k = this.sKazhdyy[j] as number;
+      if (k > 1 && sub % k !== 0) continue;
+      const a = this.sA[j] as number,
+        b = this.sB[j] as number;
+      const dx = (this.x[b] as number) - (this.x[a] as number);
+      const dy = (this.y[b] as number) - (this.y[a] as number);
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d === 0) continue;
+      const raz = (d - (this.sDlina[j] as number)) / d;
+      const ma = this.massa[a] as number,
+        mb = this.massa[b] as number;
+      const wa = 1 / ma,
+        wb = 1 / mb,
+        w = wa + wb;
+      const f = (this.sZhest[j] as number) * raz;
+      this.x[a] = (this.x[a] as number) + dx * f * (wa / w);
+      this.y[a] = (this.y[a] as number) + dy * f * (wa / w);
+      this.x[b] = (this.x[b] as number) - dx * f * (wb / w);
+      this.y[b] = (this.y[b] as number) - dy * f * (wb / w);
+    }
+  }
+
+  private vremennye(): void {
+    for (let j = 0; j < this.v; j++) {
+      if (!this.vZhiva[j]) continue;
+      const i = this.vTochka[j] as number,
+        o = this.vOtrezok[j] as number;
+      if (!this.oZhiv[o]) {
+        this.razorvatVremennuyu(j);
+        continue;
+      }
+      const t = this.vDolya[j] as number;
+      const ax = (this.oX1[o] as number) + ((this.oX2[o] as number) - (this.oX1[o] as number)) * t;
+      const ay = (this.oY1[o] as number) + ((this.oY2[o] as number) - (this.oY1[o] as number)) * t;
+      // якорь на расстоянии радиуса частицы от отрезка по нормали
+      const nx = this.kontNx[i] as number,
+        ny = this.kontNy[i] as number;
+      const r = this.radius[i] as number;
+      const tx = ax + nx * r,
+        ty = ay + ny * r;
+      const dx = tx - (this.x[i] as number),
+        dy = ty - (this.y[i] as number);
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d > (this.vPorog[j] as number)) {
+        this.razorvatVremennuyu(j);
+        continue;
+      }
+      this.x[i] = (this.x[i] as number) + dx * 0.5;
+      this.y[i] = (this.y[i] as number) + dy * 0.5;
+    }
+  }
+
+  private kontakty(): void {
+    for (let i = 0; i < this.n; i++) {
+      const x = this.x[i] as number,
+        y = this.y[i] as number,
+        r = this.radius[i] as number;
+      for (let o = 0; o < this.k; o++) {
+        if (!this.oZhiv[o]) continue;
+        const x1 = this.oX1[o] as number,
+          y1 = this.oY1[o] as number;
+        const ex = (this.oX2[o] as number) - x1,
+          ey = (this.oY2[o] as number) - y1;
+        const el = ex * ex + ey * ey;
+        // Непрерывная проверка: путь px->x пересёк отрезок? Тогда вернуть на сторону px.
+        const pxi = this.px[i] as number,
+          pyi = this.py[i] as number;
+        const l0 = Math.sqrt(el) || 1;
+        const snx = -ey / l0,
+          sny = ex / l0;
+        const sPrev = (pxi - x1) * snx + (pyi - y1) * sny;
+        const sNow = (x - x1) * snx + (y - y1) * sny;
+        if (sPrev * sNow < 0 && Math.abs(sPrev) > 1e-9) {
+          const tt = sPrev / (sPrev - sNow);
+          const ix = pxi + (x - pxi) * tt,
+            iy = pyi + (y - pyi) * tt;
+          const u = el > 0 ? ((ix - x1) * ex + (iy - y1) * ey) / el : 0;
+          if (u >= 0 && u <= 1) {
+            const zn = sPrev > 0 ? 1 : -1;
+            this.x[i] = ix + snx * r * zn;
+            this.y[i] = iy + sny * r * zn;
+            this.kontakt[i] = 1;
+            this.kontNx[i] = snx * zn;
+            this.kontNy[i] = sny * zn;
+            this.kontOtrezok[i] = o;
+            this.kontX[i] = ix;
+            this.kontY[i] = iy;
+            continue;
+          }
+        }
+        let t = el > 0 ? ((x - x1) * ex + (y - y1) * ey) / el : 0;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const cx = x1 + ex * t,
+          cy = y1 + ey * t;
+        let dx = x - cx,
+          dy = y - cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= r * r) continue;
+        let d = Math.sqrt(d2);
+        let nx: number, ny: number;
+        if (d < 1e-9) {
+          // частица ровно на отрезке: нормаль слева от направления отрезка, к прошлой позиции
+          const l = Math.sqrt(el) || 1;
+          nx = -ey / l;
+          ny = ex / l;
+          const sx = (this.px[i] as number) - cx,
+            sy = (this.py[i] as number) - cy;
+          if (sx * nx + sy * ny < 0) {
+            nx = -nx;
+            ny = -ny;
+          }
+          d = 0;
+        } else {
+          nx = dx / d;
+          ny = dy / d;
+        }
+        const pen = r - d;
+        // выталкивание
+        this.x[i] = x + nx * pen;
+        this.y[i] = y + ny * pen;
+        // трение Кулона: тангенциальное смещение за такт гасится не больше чем на mu*pen
+        const mu = Math.min(this.trenie[i] as number, this.oTrenie[o] as number);
+        const vx = (this.x[i] as number) - (this.px[i] as number);
+        const vy = (this.y[i] as number) - (this.py[i] as number);
+        const vt = vx * -ny + vy * nx; // проекция на касательную
+        const maxGas = mu * pen;
+        const gas = Math.abs(vt) < maxGas ? vt : Math.sign(vt) * maxGas;
+        this.x[i] = (this.x[i] as number) - -ny * gas;
+        this.y[i] = (this.y[i] as number) - nx * gas;
+        this.kontakt[i] = 1;
+        this.kontNx[i] = nx;
+        this.kontNy[i] = ny;
+        this.kontOtrezok[i] = o;
+        this.kontX[i] = cx;
+        this.kontY[i] = cy;
+        dx = 0;
+        dy = 0;
+      }
+    }
+  }
+}

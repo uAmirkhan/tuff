@@ -1,0 +1,27 @@
+{
+  "name": "tuff",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host",
+    "lint": "biome check src",
+    "format": "biome check --write src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cleanroom": "node scripts/cleanroom.mjs",
+    "check": "biome check src && tsc -b && vitest run && node scripts/cleanroom.mjs"
+  },
+  "dependencies": {
+    "pixi.js": "^8.19.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "@types/node": "^24.13.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.1.10"
+  }
+}
