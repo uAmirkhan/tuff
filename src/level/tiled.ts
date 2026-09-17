@@ -92,9 +92,10 @@ const POLYA_OBEKTA = [
   'plavuchest',
   'silaX',
   'silaY',
+  'os',
 ] as const;
 // точечные объекты с размерами в свойствах (маятник: якорь точкой, контейнер размерами)
-const RAZMERY_V_SVOYSTVAH: TipObekta[] = ['mayatnik'];
+const RAZMERY_V_SVOYSTVAH: TipObekta[] = ['mayatnik', 'koromyslo'];
 const POLYA_UROVNYA = [
   'id',
   'nazvanie',
