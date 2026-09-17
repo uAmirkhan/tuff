@@ -13,10 +13,29 @@ export interface Sushchnost {
   h: number;
   cel: string;
   nuzhnaKorka: boolean;
+  fiksiruetsya: boolean;
   aktivna: boolean; // для плит, рычагов, заслонок, горнов
   sobrana: boolean; // для собираемого
   otrezki: number[]; // отрезки заслонки, чтобы убрать при открытии
+  zvenya: number[]; // частицы звеньев цепи
+  svyazi: number[]; // связи цепи
 }
+
+export const CEP: {
+  radiusZvena: number;
+  massaZvena: number;
+  zhestkost: number;
+  razryv: { slabaya: number; prochnaya: number };
+  massaYakorya: number;
+  zapas: number;
+} = {
+  radiusZvena: 0.14,
+  massaZvena: 0.3,
+  zhestkost: 0.9,
+  razryv: { slabaya: 0.12, prochnaya: 0.6 }, // обычное тело на мосту ~7%, Корка ~18% (scripts/cep-natyazhenie.ts)
+  massaYakorya: 1e9,
+  zapas: 1.06, // длина дуги моста относительно прямой: провисание без напряжения
+};
 
 export interface ZagruzhennyyUroven {
   dannye: Uroven;
@@ -124,10 +143,54 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       h: o.h ?? 0,
       cel: o.cel ?? '',
       nuzhnaKorka: o.nuzhnaKorka ?? false,
+      fiksiruetsya: o.fiksiruetsya ?? true,
       aktivna: false,
       sobrana: false,
       otrezki: [],
+      zvenya: [],
+      svyazi: [],
     };
+    if (o.tip === 'cep') {
+      const n = Math.max(2, o.zvenyev ?? 8);
+      const x2 = o.x2 ?? o.x,
+        y2 = o.y2 ?? o.y - n * 0.25;
+      const raz = o.razryv ?? CEP.razryv[o.prochnost ?? 'prochnaya'];
+      const dvaYakorya = o.x2 !== undefined;
+      // якорь A: неподвижная частица огромной массы
+      const a = mir.dobavitTochku(o.x, o.y, CEP.massaYakorya, 0.02, 1, 1);
+      mir.gravMul[a] = 0;
+      let prev = a;
+      // мост провисает по параболе: дуга длиннее прямой в zapas раз, звенья не сжаты и не растянуты
+      const pryamaya = Math.hypot(x2 - o.x, y2 - o.y);
+      const proves = dvaYakorya ? Math.sqrt((3 * pryamaya * pryamaya * (CEP.zapas - 1)) / 8) : 0;
+      // радиус звена от шага: звенья перекрываются, тело не проваливается между ними
+      const shagZvena = (pryamaya * (dvaYakorya ? CEP.zapas : 1)) / (n + (dvaYakorya ? 1 : 0));
+      const radiusZvena = Math.max(CEP.radiusZvena, shagZvena * 0.55);
+      for (let i = 1; i <= n; i++) {
+        const t = i / (n + (dvaYakorya ? 1 : 0));
+        const q = mir.dobavitTochku(
+          o.x + (x2 - o.x) * t,
+          o.y + (y2 - o.y) * t - 4 * proves * t * (1 - t),
+          CEP.massaZvena,
+          radiusZvena,
+          1,
+          0.995,
+        );
+        mir.sdelatTverdoy(q);
+        s.zvenya.push(q);
+        const sv = mir.dobavitSvyaz(prev, q, CEP.zhestkost, 1);
+        mir.sRazryv[sv] = raz;
+        s.svyazi.push(sv);
+        prev = q;
+      }
+      if (dvaYakorya) {
+        const b = mir.dobavitTochku(x2, y2, CEP.massaYakorya, 0.02, 1, 1);
+        mir.gravMul[b] = 0;
+        const sv = mir.dobavitSvyaz(prev, b, CEP.zhestkost, 1);
+        mir.sRazryv[sv] = raz;
+        s.svyazi.push(sv);
+      }
+    }
     if (o.tip === 'zaslonka') {
       // заслонка: замкнутый прямоугольник из четырёх односторонних отрезков, обход по часовой
       const x1 = o.x,

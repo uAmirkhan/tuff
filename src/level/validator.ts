@@ -23,6 +23,8 @@ export function proveritUroven(u: Uroven): string[] {
       (!o.w || !o.h)
     )
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);
+    if (o.tip === 'cep' && o.zvenyev !== undefined && o.zvenyev < 2)
+      oshibki.push(`цепь ${o.id ?? '?'} короче двух звеньев`);
     if (
       o.x < u.granicy.minX ||
       o.x > u.granicy.maxX ||

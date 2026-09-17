@@ -29,6 +29,7 @@ export type TipObekta =
   | 'plita' // нажимная плита, поле cel
   | 'rychag' // рычаг, поле cel
   | 'zaslonka' // дверь, открывается по ссылке
+  | 'cep' // цепь между двумя якорями (x,y)-(x2,y2) или висящая с одного; поля zvenyev, prochnost
   | 'shlakozhuk' // враг: ползёт и жжёт холодом
   | 'iskropryg'; // враг: то же, иногда прыгает
 
@@ -41,6 +42,12 @@ export interface Obekt {
   h?: number;
   cel?: string; // id объекта, который переключает плита или рычаг
   nuzhnaKorka?: boolean; // плита срабатывает только под Коркой
+  fiksiruetsya?: boolean; // плита остаётся нажатой (по умолчанию да); false = держит только под весом
+  x2?: number; // второй якорь цепи
+  y2?: number;
+  zvenyev?: number; // число звеньев цепи
+  prochnost?: 'slabaya' | 'prochnaya'; // слабая рвётся под Коркой
+  razryv?: number; // явный порог растяжения цепи, калибруется scripts/most2.ts под геометрию моста
 }
 
 export interface Uroven {

@@ -20,7 +20,7 @@ export const VRAGI = {
     trenie: 1.0,
     zrenie: 10,
     tyaga: 0.007,
-    pryzhok: 0.16, // импульс прыжка
+    pryzhok: 0.085, // импульс прыжка: около 1,5 диаметра высоты
     shansPryzhka: 0.4,
     uronIgroku: 0.4,
   },

@@ -94,6 +94,27 @@ export class Stsena {
               g.fill({ color: 0x8a8a99 });
             }
             break;
+          case 'cep': {
+            // звенья: кружки, связи: линии между соседями, если живы
+            for (let i = 0; i < s.svyazi.length; i++) {
+              const sv = s.svyazi[i] as number;
+              if (!mir.sZhiva[sv]) continue;
+              const a = mir.sA[sv] as number,
+                b = mir.sB[sv] as number;
+              g.moveTo(this.ekX(mir.x[a] as number), this.ekY(mir.y[a] as number));
+              g.lineTo(this.ekX(mir.x[b] as number), this.ekY(mir.y[b] as number));
+              g.stroke({ width: 3, color: 0x9a8a7a });
+            }
+            for (const q of s.zvenya) {
+              g.circle(
+                this.ekX(mir.x[q] as number),
+                this.ekY(mir.y[q] as number),
+                0.11 * this.masshtab,
+              );
+              g.fill({ color: 0x7a6a5a });
+            }
+            break;
+          }
           case 'gorn': {
             // горн: каменная арка с огнём внутри, когда активен
             const m = this.masshtab;

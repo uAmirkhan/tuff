@@ -31,6 +31,8 @@ export class Mir {
   readonly trenie = new Float64Array(MAX_TOCHEK);
   readonly radius = new Float64Array(MAX_TOCHEK);
   readonly dempfer = new Float64Array(MAX_TOCHEK);
+  readonly tverdaya = new Uint8Array(MAX_TOCHEK); // 1 = сталкивается с частицами контуров как кружок
+  tverdyh: number[] = []; // индексы твёрдых частиц
   // Контакт за такт: нормаль последнего контакта и флаг
   readonly kontakt = new Uint8Array(MAX_TOCHEK);
   readonly kontNx = new Float64Array(MAX_TOCHEK);
@@ -48,6 +50,8 @@ export class Mir {
   readonly sKazhdyy = new Int32Array(MAX_SVYAZEY); // релаксировать на каждом k-м подшаге
   readonly sZhiva = new Uint8Array(MAX_SVYAZEY);
   readonly sOdnostor = new Uint8Array(MAX_SVYAZEY); // 1 = связь только не даёт сблизиться ближе длины
+  readonly sRazryv = new Float64Array(MAX_SVYAZEY); // 0 = не рвётся, иначе доля растяжения, при которой рвётся
+  porvano: number[] = []; // связи, порванные за такт
 
   // Статические отрезки уровня
   k = 0;
@@ -129,7 +133,15 @@ export class Mir {
     this.dempfer[i] = dempfer;
     this.kontakt[i] = 0;
     this.vPoTochke[i] = -1;
+    this.tverdaya[i] = 0;
     return i;
+  }
+
+  sdelatTverdoy(i: number): void {
+    if (!this.tverdaya[i]) {
+      this.tverdaya[i] = 1;
+      this.tverdyh.push(i);
+    }
   }
 
   dobavitSvyaz(a: number, b: number, zhest: number, kazhdyy: number, dlina?: number): number {
@@ -144,6 +156,7 @@ export class Mir {
     this.sKazhdyy[i] = kazhdyy;
     this.sZhiva[i] = 1;
     this.sOdnostor[i] = 0;
+    this.sRazryv[i] = 0;
     return i;
   }
 
@@ -275,6 +288,31 @@ export class Mir {
     }
   }
 
+  // Вязкость к частице (звено цепи, ящик): держит расстояние сумма радиусов, рвётся при рывке
+  prilepitKChastice(tochka: number, cel: number, porog: number): number {
+    if (this.vPoTochke[tochka] !== -1) return this.vPoTochke[tochka] as number;
+    let slot = -1;
+    for (let j = 0; j < this.v; j++)
+      if (!this.vZhiva[j]) {
+        slot = j;
+        break;
+      }
+    if (slot === -1) {
+      if (this.v >= MAX_VREMENNYH) {
+        this.otbrosheno++;
+        return -1;
+      }
+      slot = this.v++;
+    }
+    this.vTochka[slot] = tochka;
+    this.vOtrezok[slot] = -1 - cel;
+    this.vDolya[slot] = 0;
+    this.vPorog[slot] = porog;
+    this.vZhiva[slot] = 1;
+    this.vPoTochke[tochka] = slot;
+    return slot;
+  }
+
   razorvatVremennuyu(j: number): void {
     if (!this.vZhiva[j]) return;
     this.vZhiva[j] = 0;
@@ -292,6 +330,7 @@ export class Mir {
     const dt = this.p.shag;
     const g = this.p.gravitatsiya * dt * dt;
     const maxV = this.p.maxSkorost;
+    this.porvano.length = 0;
     // 1. Интегрирование Верле
     for (let i = 0; i < this.n; i++) {
       const x = this.x[i] as number,
@@ -315,13 +354,31 @@ export class Mir {
     const ps = this.p.podshagov;
     for (let o = 0; o < this.k; o++) this.udar[o] = 0;
     for (let c = 0; c < this.c; c++) this.udarTel[c] = 0;
-    for (let i = 0; i < this.n; i++) this.kontaktTel[i] = 0;
+    for (let i = 0; i < this.n; i++) {
+      this.kontaktTel[i] = 0;
+      this.kontaktZveno[i] = -1;
+    }
     for (let sub = 0; sub < ps; sub++) {
       this.relaksatsiya(sub);
       this.ploshchadi(sub);
       this.vremennye();
       this.kontakty();
       this.kontaktyTel();
+      this.kontaktyZvenyev();
+    }
+    // 2а. Разрыв связей: раз в такт по установившимся позициям после подшагов;
+    // рывок внутри одного подшага цепь не рвёт, а нагрузка держится и рвёт
+    for (let j = 0; j < this.m; j++) {
+      const rz = this.sRazryv[j] as number;
+      if (!this.sZhiva[j] || rz === 0) continue;
+      const a = this.sA[j] as number,
+        b = this.sB[j] as number;
+      const dx = (this.x[b] as number) - (this.x[a] as number);
+      const dy = (this.y[b] as number) - (this.y[a] as number);
+      if (Math.sqrt(dx * dx + dy * dy) > (this.sDlina[j] as number) * (1 + rz)) {
+        this.sZhiva[j] = 0;
+        this.porvano.push(j);
+      }
     }
     // 3. Хрупкие отрезки: суммарный импульс удара за такт выше порога ломает
     this.slomano.length = 0;
@@ -366,6 +423,26 @@ export class Mir {
       if (!this.vZhiva[j]) continue;
       const i = this.vTochka[j] as number,
         o = this.vOtrezok[j] as number;
+      if (o < 0) {
+        // к частице: держать расстояние радиусов, делить по массам
+        const q = -1 - o;
+        const dx = (this.x[q] as number) - (this.x[i] as number);
+        const dy = (this.y[q] as number) - (this.y[i] as number);
+        const d = Math.sqrt(dx * dx + dy * dy) || 1e-9;
+        const cel = (this.radius[i] as number) + (this.radius[q] as number);
+        if (d - cel > (this.vPorog[j] as number) * 3) {
+          this.razorvatVremennuyu(j);
+          continue;
+        }
+        const wi = 1 / (this.massa[i] as number),
+          wq = 1 / (this.massa[q] as number);
+        const f = ((d - cel) / d) * this.vyazkostZhestkost;
+        this.x[i] = (this.x[i] as number) + dx * f * (wi / (wi + wq));
+        this.y[i] = (this.y[i] as number) + dy * f * (wi / (wi + wq));
+        this.x[q] = (this.x[q] as number) - dx * f * (wq / (wi + wq));
+        this.y[q] = (this.y[q] as number) - dy * f * (wq / (wi + wq));
+        continue;
+      }
       if (!this.oZhiv[o]) {
         this.razorvatVremennuyu(j);
         continue;
@@ -441,6 +518,83 @@ export class Mir {
           const q1 = otB + luchshe,
             q2 = otB + ((luchshe + 1) % nB);
           this.razvesti(p, q1, q2, x, y, dmin + r, b);
+        }
+      }
+    }
+  }
+
+  // Твёрдые частицы (звенья) против частиц контуров: кружок-кружок, по массам
+  readonly kontaktZveno = new Int32Array(MAX_TOCHEK); // индекс звена, которого коснулась частица, или -1
+  private kontaktyZvenyev(): void {
+    if (this.tverdyh.length === 0) return;
+    for (let c = 0; c < this.c; c++) {
+      const ot = this.cOt[c] as number,
+        n = this.cN[c] as number;
+      for (let i = 0; i < n; i++) {
+        const p = ot + i;
+        const x = this.x[p] as number,
+          y = this.y[p] as number,
+          rp = this.radius[p] as number;
+        for (const q of this.tverdyh) {
+          const dx = x - (this.x[q] as number),
+            dy = y - (this.y[q] as number);
+          const rq = this.radius[q] as number;
+          const d2 = dx * dx + dy * dy;
+          const cel = rp + rq;
+          if (d2 >= cel * cel || d2 === 0) continue;
+          const d = Math.sqrt(d2);
+          const pen = cel - d;
+          const nx = dx / d,
+            ny = dy / d;
+          const wp = 1 / (this.massa[p] as number),
+            wq = 1 / (this.massa[q] as number);
+          const w = wp + wq;
+          this.x[p] = (this.x[p] as number) + nx * pen * (wp / w);
+          this.y[p] = (this.y[p] as number) + ny * pen * (wp / w);
+          this.x[q] = (this.x[q] as number) - nx * pen * (wq / w);
+          this.y[q] = (this.y[q] as number) - ny * pen * (wq / w);
+          this.kontaktZveno[p] = q;
+        }
+      }
+      // звено против рёбер контура: чтобы тело не проваливалось между звеньями
+      for (const q of this.tverdyh) {
+        const qx = this.x[q] as number,
+          qy = this.y[q] as number,
+          rq = this.radius[q] as number;
+        for (let i = 0; i < n; i++) {
+          const a = ot + i,
+            b = ot + ((i + 1) % n);
+          const x1 = this.x[a] as number,
+            y1 = this.y[a] as number;
+          const ex = (this.x[b] as number) - x1,
+            ey = (this.y[b] as number) - y1;
+          const el = ex * ex + ey * ey;
+          let t = el > 0 ? ((qx - x1) * ex + (qy - y1) * ey) / el : 0;
+          if (t < 0) t = 0;
+          else if (t > 1) t = 1;
+          const cx = x1 + ex * t,
+            cy = y1 + ey * t;
+          const dx = qx - cx,
+            dy = qy - cy;
+          const d2 = dx * dx + dy * dy;
+          if (d2 >= rq * rq || d2 === 0) continue;
+          const d = Math.sqrt(d2);
+          const pen = rq - d;
+          const nx = dx / d,
+            ny = dy / d;
+          const wq = 1 / (this.massa[q] as number);
+          const wa = 1 / (this.massa[a] as number),
+            wb = 1 / (this.massa[b] as number);
+          const we = (1 - t) * wa + t * wb;
+          const w = wq + we;
+          this.x[q] = qx + nx * pen * (wq / w);
+          this.y[q] = qy + ny * pen * (wq / w);
+          this.x[a] = (this.x[a] as number) - nx * pen * (we / w) * (1 - t);
+          this.y[a] = (this.y[a] as number) - ny * pen * (we / w) * (1 - t);
+          this.x[b] = (this.x[b] as number) - nx * pen * (we / w) * t;
+          this.y[b] = (this.y[b] as number) - ny * pen * (we / w) * t;
+          this.kontaktZveno[a] = q;
+          this.kontaktZveno[b] = q;
         }
       }
     }
