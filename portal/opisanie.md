@@ -14,7 +14,7 @@
 | `oblozhka-800x800.png` | CrazyGames: cover 1:1 | 800×800 |
 | `kadry/1-1.png … zh-1.png` | скриншоты | 1280×720, без отладки и сенсорных кнопок |
 
-Кадры снимаются заново после любой правки вида: `node scripts/kadr-portal.mjs out.png "uroven=1-3&chisto=1" "KeyD:1500"` при поднятом `npm run dev`. Обложки и иконка режутся из кадров скриптом в истории (PIL), титул поверх обложки: Arial Bold, цвет 0xffb347 с тёмной обводкой. До решения по названию это заглушки.
+Кадры снимаются заново после любой правки вида: `node scripts/kadr-portal.mjs out.png "uroven=1-3&chisto=1" "KeyD:1500"` при поднятом `npm run dev`; герой для иконки: `node scripts/kadr-portal.mjs portal/kadry/geroy-1024.png "komnata=1&chisto=1" "KeyD:400" 1024 1024`. Обложки и иконка режутся из кадров скриптом `python scripts/oblozhki.py [титул]`, титул поверх обложки: Arial Bold, цвет 0xffb347 с тёмной обводкой. До решения по названию это заглушки.
 
 ## Яндекс Игры
 
