@@ -145,6 +145,14 @@ export class Igra {
   }
 
   // Вызывать после mir.shag() и telo.posle()
+  // Промывка-погоня: вода со скоростью поднимается после задержки, верх зоны растёт
+  private podnyatVodu(): void {
+    for (const s of this.ur.sushchnosti) {
+      if (s.tip !== 'voda' || !(s.skorost > 0) || s.poRaspisaniyu) continue;
+      if (this.takty > s.zaderzhka * 60) s.h += s.skorost / 60;
+    }
+  }
+
   // Зоны по расписанию: включены первую половину периода, выключены вторую (промывка, вентилятор)
   private raspisanieZon(): void {
     const t = this.takty / 60;
@@ -200,6 +208,7 @@ export class Igra {
     const g = this.telo.gabarity();
     this.dvigatPorshni();
     this.raspisanieZon();
+    this.podnyatVodu();
     // Среда
     let vLave = false,
       vShipah = false,
@@ -463,9 +472,14 @@ export class Igra {
     this.telo.vosstanovit(this.chekpoint[0], this.chekpoint[1], 'возрождение');
     // обвал откатывается ниже чекпоинта и снова ждёт
     for (const s of this.ur.sushchnosti) {
-      if (s.tip !== 'obval') continue;
-      s.verh = Math.min(s.verh, this.chekpoint[1] - 5);
-      s.zaderzhka = this.takty / 60 + 2;
+      if (s.tip === 'obval') {
+        s.verh = Math.min(s.verh, this.chekpoint[1] - 5);
+        s.zaderzhka = this.takty / 60 + 2;
+      } else if (s.tip === 'voda' && s.skorost > 0) {
+        // промывка откатывается на пять ниже чекпоинта и снова ждёт две секунды
+        s.h = Math.max(0.1, Math.min(s.h, this.chekpoint[1] - 5 - s.y));
+        s.zaderzhka = this.takty / 60 + 2;
+      }
     }
     this.sobytiya.push({ tip: 'vozrozhdenie' });
   }

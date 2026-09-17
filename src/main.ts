@@ -526,6 +526,7 @@ async function start(): Promise<void> {
         .join('\n');
     // отладочное состояние для прогонов Playwright (положение героя, ввод)
     (window as unknown as { tuff: unknown }).tuff = {
+      uroven: tekushchiy.id,
       cx: telo.cx,
       cy: telo.cy,
       nam: { ...vvod.nam },
