@@ -423,6 +423,22 @@ async function start(): Promise<void> {
           });
         } else if (s.tip === 'gorn')
           analitika.sobytie('checkpoint', { uroven: tekushchiy.id, id: s.id });
+        else if (s.tip === 'panel') {
+          if (!progress.paneli.includes(s.nomer)) progress.paneli.push(s.nomer);
+          sohranitProgress(hranilishche, progress);
+          analitika.sobytie('panel', { uroven: tekushchiy.id, nomer: s.nomer });
+        } else if (s.tip === 'uzel') {
+          if (!progress.uzly.includes(tekushchiy.id)) progress.uzly.push(tekushchiy.id);
+          sohranitProgress(hranilishche, progress);
+          analitika.sobytie('uzel', { uroven: tekushchiy.id });
+        } else if (s.tip === 'ruda') {
+          const klyuch = `${tekushchiy.id}:${s.id}`;
+          if (!progress.rudaNaydena.includes(klyuch)) {
+            progress.rudaNaydena.push(klyuch);
+            progress.ruda++;
+            sohranitProgress(hranilishche, progress);
+          }
+        }
       }
       // скорость тела за такт для звука удара
       let sk = 0;

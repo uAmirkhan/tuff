@@ -242,6 +242,159 @@ export class Stsena {
             }
             break;
           }
+          case 'bak': {
+            // бак образца: стеклянный цилиндр на постаменте; полный светится, разбитый с трещиной
+            const m = this.masshtab;
+            const w = (s.w || 1) * m,
+              h = (s.h || 1.6) * m;
+            g.rect(x - w / 2 - 4, y - 0.12 * m, w + 8, 0.12 * m);
+            g.fill({ color: 0x3a3f4a });
+            g.roundRect(x - w / 2, y - h, w, h - 0.12 * m, 8);
+            g.fill({ color: 0x23303a, alpha: 0.9 });
+            if (s.vid === 'polnyy') {
+              const puls = s.aktivna ? 0.6 + 0.4 * Math.sin(performance.now() / 150) : 0.25;
+              g.roundRect(x - w / 2 + 6, y - h * 0.6, w - 12, h * 0.45, 6);
+              g.fill({ color: 0xff6a1a, alpha: puls });
+              g.circle(x - 6, y - h * 0.4, 2.5);
+              g.circle(x + 6, y - h * 0.4, 2.5);
+              g.fill({ color: 0xfff1d6, alpha: puls });
+            }
+            g.roundRect(x - w / 2, y - h, w, h - 0.12 * m, 8);
+            g.stroke({ width: 2, color: 0x8fb4c8, alpha: 0.7 });
+            if (s.vid === 'razbit') {
+              g.moveTo(x - w * 0.3, y - h * 0.9);
+              g.lineTo(x + w * 0.1, y - h * 0.5);
+              g.lineTo(x - w * 0.15, y - h * 0.2);
+              g.stroke({ width: 2, color: 0xdff4ff, alpha: 0.8 });
+            }
+            if (s.vid === 'pustoy' && s.nadpis === 'sorvan') {
+              // сорванные крепления: две скобы торчат
+              g.rect(x - w / 2 - 6, y - h * 0.8, 6, 3);
+              g.rect(x + w / 2, y - h * 0.8, 6, 3);
+              g.fill({ color: 0xc9a36b });
+            }
+            break;
+          }
+          case 'okno': {
+            // окно в отсек или ствол: тёмный проём с рамой, внутри огни (ствол) или маркировка
+            const m = this.masshtab;
+            const w = s.w * m,
+              h = s.h * m;
+            g.rect(x, y - h, w, h);
+            g.fill({ color: s.vid === 'stvol' ? 0x0d0a12 : 0x141a22 });
+            if (s.vid === 'stvol') {
+              // огни ярусов вниз по стволу
+              for (let i = 0; i < 6; i++) {
+                const yy = y - h + (i + 0.5) * (h / 6);
+                g.circle(x + w * 0.3, yy, 2);
+                g.circle(x + w * 0.7, yy, 2);
+                g.fill({ color: 0xffb347, alpha: 0.6 - i * 0.08 });
+              }
+            } else {
+              // маркировка: точки по числу в надписи
+              const n = Number.parseInt(s.nadpis.replace(/\D/g, ''), 10) || 0;
+              for (let i = 0; i < n; i++) {
+                g.circle(x + w / 2 + (i - (n - 1) / 2) * 8, y - h / 2, 3);
+                g.fill({ color: 0xbfe0f4, alpha: 0.8 });
+              }
+            }
+            g.rect(x, y - h, w, h);
+            g.stroke({ width: 3, color: 0x6a6f7a });
+            break;
+          }
+          case 'shema': {
+            // схема процедуры: табличка на стене со значком способности
+            const m = this.masshtab;
+            g.roundRect(x - 0.35 * m, y - 0.35 * m, 0.7 * m, 0.7 * m, 6);
+            g.fill({ color: 0xdfe6ee, alpha: 0.85 });
+            const c = 0x2a3a4a;
+            const r = 0.18 * m;
+            if (s.vid === 'vyazkost') {
+              for (const [dx, dy] of [
+                [-0.7, 0.3],
+                [0, -0.5],
+                [0.7, 0.3],
+              ] as const) {
+                g.circle(x + dx * r, y + dy * r, r * 0.32);
+                g.fill({ color: c });
+              }
+            } else if (s.vid === 'rasplav') {
+              g.moveTo(x - r, y);
+              for (let i = 1; i <= 8; i++)
+                g.lineTo(x - r + (i / 8) * 2 * r, y + Math.sin(i * 1.57) * r * 0.4);
+              g.stroke({ width: 3, color: c });
+            } else if (s.vid === 'korka') {
+              for (let i = 0; i < 6; i++) {
+                const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+                if (i === 0) g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+                else g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+              }
+              g.closePath();
+              g.stroke({ width: 3, color: c });
+            } else {
+              g.moveTo(x, y - r);
+              g.lineTo(x + r * 0.8, y + r * 0.2);
+              g.lineTo(x - r * 0.8, y + r * 0.2);
+              g.closePath();
+              g.fill({ color: c });
+            }
+            break;
+          }
+          case 'panel': {
+            // панель строителей: тёмная плита с эмблемой «тепло внутри», найденная тускнеет
+            const m = this.masshtab;
+            const a = s.sobrana ? 0.35 : 1;
+            g.roundRect(x - 0.45 * m, y - 0.6 * m, 0.9 * m, 0.6 * m, 4);
+            g.fill({ color: 0x2b2f3a, alpha: a });
+            g.roundRect(x - 0.45 * m, y - 0.6 * m, 0.9 * m, 0.6 * m, 4);
+            g.stroke({ width: 2, color: 0xc9a36b, alpha: a });
+            g.circle(x, y - 0.3 * m, 0.14 * m);
+            g.stroke({ width: 2, color: 0xffb347, alpha: a });
+            g.circle(x, y - 0.3 * m, 0.04 * m);
+            g.fill({ color: 0xffb347, alpha: a });
+            break;
+          }
+          case 'uzel': {
+            // узел теплотрассы: труба в стену и горн-вентиль; заряд кольцом, зажжённый светится
+            const m = this.masshtab;
+            g.rect(x - 0.15 * m, y - 1.4 * m, 0.3 * m, 1.4 * m);
+            g.fill({ color: s.aktivna ? 0x8a4a2a : 0x4a4f5a });
+            g.rect(x - 0.15 * m, y - 1.4 * m, 0.3 * m, 1.4 * m);
+            g.stroke({ width: 2, color: s.aktivna ? 0xffb347 : 0x6a6f7a });
+            g.circle(x, y - 0.35 * m, 0.32 * m);
+            g.fill({ color: 0x2a2f3a });
+            g.circle(x, y - 0.35 * m, 0.32 * m);
+            g.stroke({ width: 3, color: s.aktivna ? 0xffd23f : 0x8a8f9a });
+            const dolya = s.aktivna ? 1 : Math.min(1, s.zaryad / 180);
+            if (dolya > 0) {
+              g.moveTo(x, y - 0.35 * m);
+              g.arc(x, y - 0.35 * m, 0.22 * m, -Math.PI / 2, -Math.PI / 2 + dolya * Math.PI * 2);
+              g.closePath();
+              g.fill({ color: 0xff8c3a, alpha: s.aktivna ? 0.9 : 0.7 });
+            }
+            if (s.aktivna) {
+              g.circle(x, y - 0.35 * m, 0.55 * m);
+              g.fill({ color: 0xffb347, alpha: 0.12 + 0.08 * Math.sin(performance.now() / 300) });
+            }
+            break;
+          }
+          case 'ruda': {
+            // клад руды: три оранжевых кристалла в стене
+            if (s.sobrana) break;
+            const m = this.masshtab;
+            for (const [dx, hh] of [
+              [-0.12, 0.22],
+              [0.02, 0.32],
+              [0.14, 0.18],
+            ] as const) {
+              g.moveTo(x + dx * m - 0.06 * m, y);
+              g.lineTo(x + dx * m, y - hh * m);
+              g.lineTo(x + dx * m + 0.06 * m, y);
+              g.closePath();
+              g.fill({ color: 0xff8c3a });
+            }
+            break;
+          }
           case 'gorn': {
             // горн: каменная арка с огнём внутри, когда активен
             const m = this.masshtab;

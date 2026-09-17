@@ -9,6 +9,7 @@ const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
 // множители силы потока по материалу героя: Расплав парусит, Корка почти не летит
 const POTOK = { rasplav: 1.8, korka: 0.15, konteyner: 0.6 };
+const UZEL = { takty: 180, radiusVstrechi: 3 }; // узел теплотрассы: 3 секунды Вязкости; встреча с баком в 3 диаметрах
 
 import { ZHAR } from './config/zhar';
 import type { Namerenie, Telo } from './telo';
@@ -26,7 +27,10 @@ export type Sobytie =
   | { tip: 'vragUbit'; kem: 'korka' | 'sreda' }
   | { tip: 'uronOtVraga' }
   | { tip: 'cepPorvana'; id: string }
-  | { tip: 'boss'; chto: string };
+  | { tip: 'boss'; chto: string }
+  | { tip: 'panel'; nomer: number }
+  | { tip: 'uzel'; id: string }
+  | { tip: 'ruda'; id: string };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -212,6 +216,33 @@ export class Igra {
             if (s.tip === 'ugolek') this.zhar = Math.min(ZHAR.maks, this.zhar + ZHAR.ugolek);
             this.sobytiya.push({ tip: 'sobrano', chto: s.tip, ochki: o });
           }
+          break;
+        case 'panel':
+          if (!s.sobrana && d < ZHAR.radiusSbora) {
+            s.sobrana = true;
+            this.sobytiya.push({ tip: 'panel', nomer: s.nomer });
+          }
+          break;
+        case 'ruda':
+          if (!s.sobrana && d < ZHAR.radiusSbora) {
+            s.sobrana = true;
+            this.sobytiya.push({ tip: 'ruda', id: s.id });
+          }
+          break;
+        case 'uzel':
+          // зажигание: Вязкость рядом с горном узла UZEL.takty подряд, отрыв сбрасывает быстрее, чем копит
+          if (!s.aktivna) {
+            if (nam.vyazkost && d < ZHAR.radiusGorna) s.zaryad++;
+            else s.zaryad = Math.max(0, s.zaryad - 3);
+            if (s.zaryad >= UZEL.takty) {
+              s.aktivna = true;
+              this.sobytiya.push({ tip: 'uzel', id: s.id });
+            }
+          }
+          break;
+        case 'bak':
+          // полный бак вспыхивает, когда герой рядом: немая встреча
+          if (s.vid === 'polnyy') s.aktivna = d < UZEL.radiusVstrechi;
           break;
         case 'gorn':
           if (!s.aktivna && d < ZHAR.radiusGorna) {
