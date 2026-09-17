@@ -1,5 +1,5 @@
 // Точка входа: уровень 1-1 по умолчанию, ?komnata=1 тестовая комната, ?perf=1 замер.
-import { Graphics } from 'pixi.js';
+import { Graphics, Text } from 'pixi.js';
 import { Zvuk } from './audio/zvuk';
 import { MIR } from './game/config/telo';
 import { Igra } from './game/igra';
@@ -219,6 +219,7 @@ vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
 const stsena = new Stsena();
 const hud = document.getElementById('hud') as HTMLDivElement;
 const ui = new Graphics();
+const znachkiTekst: Text[] = [];
 
 let nakoplen = 0;
 let last = performance.now();
@@ -324,6 +325,27 @@ async function start(): Promise<void> {
       prizrak && !prizrak.zakonchen ? prizrak.telo : null,
     );
     risovatUi();
+    // подписи значков обучения
+    for (const tx of znachkiTekst) tx.visible = false;
+    stsena.znachki.forEach((z, i) => {
+      let tx = znachkiTekst[i];
+      if (!tx) {
+        tx = new Text({
+          text: '',
+          style: { fontFamily: 'monospace', fontSize: 22, fill: 0x2a1c17, fontWeight: 'bold' },
+        });
+        tx.anchor.set(0.5);
+        stsena.app.stage.addChild(tx);
+        znachkiTekst[i] = tx;
+      }
+      tx.text = z.tekst;
+      tx.position.set(z.x, z.y);
+      tx.visible = true;
+    });
+    if (vvod.nam.vyazkost) stsena.pokazannye.add('J');
+    if (vvod.nam.rasplav) stsena.pokazannye.add('K');
+    if (vvod.nam.korka) stsena.pokazannye.add('L');
+    if (vvod.nam.vybros) stsena.pokazannye.add('␣');
     kadrov++;
     if (now - fpsT > 500) {
       fps = (kadrov * 1000) / (now - fpsT);
