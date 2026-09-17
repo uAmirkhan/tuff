@@ -35,7 +35,8 @@ export function proveritUroven(u: Uroven): string[] {
   }
   // чекпоинт перед каждым испытанием: ближайший горн левее или ниже начала испытания не дальше 12 единиц
   const gorny = u.obekty.filter((o) => o.tip === 'gorn');
-  for (const isp of u.obekty.filter((o) => o.tip === 'ispytanie')) {
+  if (u.rezhim === 'zherlo' && gorny.length) oshibki.push('в Жерле не бывает горнов');
+  for (const isp of u.rezhim === 'zherlo' ? [] : u.obekty.filter((o) => o.tip === 'ispytanie')) {
     const est = gorny.some((g) => Math.hypot(g.x - isp.x, g.y - isp.y) <= 12);
     if (!est) oshibki.push(`испытание ${isp.id ?? '?'} без горна в пределах 12 единиц`);
   }

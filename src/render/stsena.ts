@@ -58,6 +58,7 @@ export class Stsena {
     ur: ZagruzhennyyUroven | null,
     vragi: Vrag[] = [],
     boss: TroynoyKotyol | null = null,
+    prizrak: Telo | null = null,
   ): void {
     const g = this.g;
     g.clear();
@@ -238,6 +239,18 @@ export class Stsena {
       g.circle(ex - 5, ey, 3);
       g.circle(ex + 5, ey, 3);
       g.fill({ color: 0xdff4ff });
+    }
+    // призрак лучшей попытки: полупрозрачный контур
+    if (prizrak) {
+      const m = prizrak.mir;
+      for (let i = 0; i < prizrak.n; i++) {
+        const p = prizrak.ot + i;
+        if (i === 0) g.moveTo(this.ekX(m.x[p] as number), this.ekY(m.y[p] as number));
+        else g.lineTo(this.ekX(m.x[p] as number), this.ekY(m.y[p] as number));
+      }
+      g.closePath();
+      g.fill({ color: 0xffd9a0, alpha: 0.22 });
+      g.stroke({ width: 2, color: 0xffd9a0, alpha: 0.5 });
     }
     // тела: контур по частицам, материал по состоянию, свечение, глаза
     for (const t of tela) this.risovatTelo(t, alpha);

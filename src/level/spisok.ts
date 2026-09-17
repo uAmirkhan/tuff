@@ -7,6 +7,7 @@ import { UROVEN_1_4 } from './urovni/1-4';
 import { UROVEN_1_5 } from './urovni/1-5';
 import { UROVEN_1_6 } from './urovni/1-6';
 import { UROVEN_1_7 } from './urovni/1-7';
+import { UROVEN_ZH_1 } from './urovni/zherlo-1';
 
 export const UROVNI: Uroven[] = [
   UROVEN_1_1,
@@ -16,6 +17,7 @@ export const UROVNI: Uroven[] = [
   UROVEN_1_5,
   UROVEN_1_6,
   UROVEN_1_7,
+  UROVEN_ZH_1,
 ];
 
 export function urovenPoId(id: string): Uroven | undefined {
@@ -25,6 +27,26 @@ export function urovenPoId(id: string): Uroven | undefined {
 export function sleduyushchiy(id: string): Uroven | undefined {
   const i = UROVNI.findIndex((u) => u.id === id);
   return i === -1 ? undefined : UROVNI[i + 1];
+}
+
+// Сумма звёзд мира по прогрессу
+export function zvyozdMira(zvezdy: (id: string) => number): number {
+  let s = 0;
+  for (const u of UROVNI) if (u.rezhim !== 'zherlo') s += zvezdy(u.id);
+  return s;
+}
+
+// Открыт ли уровень: первый всегда; кампания — если пройден предыдущий; Жерло — по звёздам
+export function urovenOtkryt(
+  u: Uroven,
+  proyden: (id: string) => boolean,
+  zvezdy: (id: string) => number,
+): boolean {
+  if (u.rezhim === 'zherlo') return zvyozdMira(zvezdy) >= (u.zvyozdDlyaOtkrytiya ?? 12);
+  const i = UROVNI.findIndex((x) => x.id === u.id);
+  if (i <= 0) return true;
+  const prev = UROVNI[i - 1] as Uroven;
+  return proyden(prev.id);
 }
 
 // Порог очков на вторую звезду: 60% от суммы всех наград уровня

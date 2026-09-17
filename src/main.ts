@@ -3,9 +3,10 @@ import { Graphics } from 'pixi.js';
 import { MIR } from './game/config/telo';
 import { Igra } from './game/igra';
 import { Telo } from './game/telo';
+import { Prizrak, Zapis } from './game/zapis';
 import { Vvod } from './input/vvod';
 import type { Uroven } from './level/format';
-import { porogOchkov, sleduyushchiy, UROVNI, urovenPoId } from './level/spisok';
+import { porogOchkov, sleduyushchiy, UROVNI, urovenOtkryt, urovenPoId } from './level/spisok';
 import { type ZagruzhennyyUroven, zagruzitUroven } from './level/zagruzka';
 import {
   HranilishcheBrauzera,
@@ -29,6 +30,8 @@ let telo: Telo;
 let igra: Igra | null = null;
 let tekushchiy: Uroven = urovenPoId(params.get('uroven') ?? '') ?? (UROVNI[0] as Uroven);
 let ekranPokazan = false;
+let zapis = new Zapis();
+let prizrak: Prizrak | null = null;
 
 function zapustitUroven(u: Uroven): void {
   tekushchiy = u;
@@ -39,6 +42,12 @@ function zapustitUroven(u: Uroven): void {
   statisty.length = 0;
   ekranPokazan = false;
   ekran.classList.remove('pokazan');
+  zapis = new Zapis();
+  prizrak = null;
+  if (u.rezhim === 'zherlo') {
+    const luchshaya = progress.urovni[u.id]?.zapis;
+    if (luchshaya && luchshaya.length) prizrak = new Prizrak(u, luchshaya);
+  }
   document.title = `TUFF ${u.id} ${u.nazvanie}`;
 }
 
@@ -53,17 +62,26 @@ function pokazatKonec(): void {
   if (!igra || !ur) return;
   ekranPokazan = true;
   const serdca = ur.sushchnosti.filter((s) => s.tip === 'serdce').map((s) => s.sobrana);
+  const zherlo = tekushchiy.rezhim === 'zherlo';
+  const bylo = progress.urovni[tekushchiy.id]?.luchsheeVremya ?? 0;
   const rez = zapisatRezultat(progress, tekushchiy.id, {
     takty: igra.takty,
     ochki: igra.ochki,
     serdca,
     porogOchkov: porogOchkov(tekushchiy),
+    zapis: zherlo ? zapis.takty : undefined,
   });
   sohranitProgress(hranilishche, progress);
   const sek = igra.takty / 60;
+  const vremya = `${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`;
   ekranZagolovok.textContent = `${tekushchiy.nazvanie}: пройден`;
   ekranZvezdy.textContent = '★'.repeat(rez.zvezdy) + '☆'.repeat(3 - rez.zvezdy);
-  ekranTekst.textContent = `время ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}  очки ${igra.ochki}  сердца ${igra.serdca}/${serdca.length}  смерти ${igra.smerti}`;
+  if (zherlo) {
+    const rekord = bylo === 0 || igra.takty <= bylo ? '  новый рекорд' : '';
+    ekranTekst.textContent = `время ${vremya}${rekord}  самое длинное падение ${igra.dlinneysheePadenie.toFixed(1)}`;
+  } else {
+    ekranTekst.textContent = `время ${vremya}  очки ${igra.ochki}  сердца ${igra.serdca}/${serdca.length}  смерти ${igra.smerti}`;
+  }
   knopkaDalshe.style.display = sleduyushchiy(tekushchiy.id) ? '' : 'none';
   ekran.classList.add('pokazan');
 }
@@ -73,6 +91,53 @@ knopkaDalshe.addEventListener('click', () => {
   if (sl) zapustitUroven(sl);
 });
 knopkaEshche.addEventListener('click', () => zapustitUroven(tekushchiy));
+
+// Меню уровней: карта мира со звёздами и замками
+const menyu = document.getElementById('menyu') as HTMLDivElement;
+const menyuSpisok = document.getElementById('menyu-spisok') as HTMLDivElement;
+const menyuKnopka = document.getElementById('menyu-knopka') as HTMLButtonElement;
+const menyuZakryt = document.getElementById('menyu-zakryt') as HTMLButtonElement;
+let menyuPokazano = false;
+
+function proyden(id: string): boolean {
+  return progress.urovni[id]?.proyden ?? false;
+}
+function zvyozd(id: string): number {
+  return progress.urovni[id]?.zvezdy ?? 0;
+}
+
+function pokazatMenyu(): void {
+  menyuSpisok.replaceChildren();
+  for (const u of UROVNI) {
+    const otkryt = urovenOtkryt(u, proyden, zvyozd);
+    const el = document.createElement('div');
+    el.className = `uroven${otkryt ? '' : ' zakryt'}`;
+    const z = zvyozd(u.id);
+    const pr = progress.urovni[u.id];
+    const vremya =
+      u.rezhim === 'zherlo' && pr?.luchsheeVremya
+        ? ` ${Math.floor(pr.luchsheeVremya / 3600)}:${String(Math.floor((pr.luchsheeVremya / 60) % 60)).padStart(2, '0')}`
+        : '';
+    el.innerHTML = `<span>${u.id} ${u.nazvanie}${vremya}</span><span class="z">${otkryt ? '★'.repeat(z) + '☆'.repeat(3 - z) : `🔒 ${u.rezhim === 'zherlo' ? `${u.zvyozdDlyaOtkrytiya ?? 12}★` : ''}`}</span>`;
+    if (otkryt)
+      el.addEventListener('click', () => {
+        skrytMenyu();
+        zapustitUroven(u);
+      });
+    menyuSpisok.appendChild(el);
+  }
+  menyu.classList.add('pokazan');
+  menyuPokazano = true;
+}
+function skrytMenyu(): void {
+  menyu.classList.remove('pokazan');
+  menyuPokazano = false;
+}
+menyuKnopka.addEventListener('click', () => (menyuPokazano ? skrytMenyu() : pokazatMenyu()));
+menyuZakryt.addEventListener('click', skrytMenyu);
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape') menyuPokazano ? skrytMenyu() : pokazatMenyu();
+});
 
 const statisty: Telo[] = [];
 
@@ -134,10 +199,13 @@ async function start(): Promise<void> {
     const now = performance.now();
     nakoplen += Math.min(0.1, (now - last) / 1000);
     last = now;
+    if (menyuPokazano || ekranPokazan) nakoplen = 0; // пауза: симуляция стоит
     while (nakoplen >= MIR.shag) {
       vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
       const t0 = performance.now();
+      if (igra && !igra.gotovo && tekushchiy.rezhim === 'zherlo') zapis.dobavit(nam);
+      prizrak?.shag();
       igra?.doShaga();
       telo.primenit(nam, igra?.korkaSredy ?? false);
       for (const s of statisty) s.primenit(nam);
@@ -158,6 +226,7 @@ async function start(): Promise<void> {
       ur,
       igra?.vragi ?? [],
       igra?.boss ?? null,
+      prizrak && !prizrak.zakonchen ? prizrak.telo : null,
     );
     risovatUi();
     kadrov++;
@@ -168,7 +237,9 @@ async function start(): Promise<void> {
     }
     const g = telo.gabarity();
     const sostoyanie = igra
-      ? `жар ${igra.zhar.toFixed(0)}  очки ${igra.ochki}  сердца ${igra.serdca}/3  смерти ${igra.smerti}${igra.gotovo ? '  УРОВЕНЬ ПРОЙДЕН' : ''}`
+      ? tekushchiy.rezhim === 'zherlo'
+        ? `время ${(igra.takty / 60).toFixed(1)} с  высота ${igra.maksVysota.toFixed(1)}  падение ${igra.dlinneysheePadenie.toFixed(1)}`
+        : `жар ${igra.zhar.toFixed(0)}  очки ${igra.ochki}  сердца ${igra.serdca}/3  смерти ${igra.smerti}${igra.gotovo ? '  УРОВЕНЬ ПРОЙДЕН' : ''}`
       : '';
     hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\nWASD/стрелки  J Вязкость  K Расплав  L Корка  Пробел Выброс`;
   });
