@@ -10,7 +10,8 @@ export type Sobytie =
   | { tip: 'smert'; prichina: string }
   | { tip: 'vozrozhdenie' }
   | { tip: 'vyhod'; takty: number; ochki: number; serdca: number }
-  | { tip: 'zaslonka'; id: string; otkryta: boolean };
+  | { tip: 'zaslonka'; id: string; otkryta: boolean }
+  | { tip: 'slomano'; poligon: number };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -117,6 +118,17 @@ export class Igra {
           break;
         default:
           break;
+      }
+    }
+    // Хрупкие многоугольники: сломан один отрезок, рушится весь
+    if (this.mir.slomano.length) {
+      for (const o of this.mir.slomano) {
+        const idx = this.ur.poligonOtrezki.findIndex((p) => o >= p.ot && o < p.ot + p.n);
+        if (idx === -1 || this.ur.slomany[idx]) continue;
+        const p = this.ur.poligonOtrezki[idx] as { ot: number; n: number };
+        for (let k = p.ot; k < p.ot + p.n; k++) if (this.mir.oZhiv[k]) this.mir.ubratOtrezok(k);
+        this.ur.slomany[idx] = true;
+        this.sobytiya.push({ tip: 'slomano', poligon: idx });
       }
     }
     // Падение за границы уровня

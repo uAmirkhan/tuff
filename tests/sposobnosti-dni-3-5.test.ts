@@ -62,7 +62,7 @@ describe('способности, дни 3-5', () => {
       const mir = new Mir(MIR);
       mir.dobavitOtrezok(-10, -5, 10, -5); // дно
       const blok = mir.dobavitOtrezok(-1, 0, 1, 0, 1, 1);
-      mir.hrupkost[blok] = 0.15; // порог: обычное падение с 3 диаметров даёт ~0.07, Корка ~0.30
+      mir.hrupkost[blok] = 1.6; // порог: обычное падение с 3 диаметров даёт ~0.44, Корка ~3.0
       const telo = new Telo(mir, 0, 3.5);
       const nam = N({ korka });
       for (let t = 0; t < 300; t++) {

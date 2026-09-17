@@ -54,7 +54,9 @@ export class Stsena {
     g.clear();
     // многоугольники уровня
     if (ur) {
-      for (const p of ur.dannye.poligony) {
+      for (let pi = 0; pi < ur.dannye.poligony.length; pi++) {
+        if (ur.slomany[pi]) continue;
+        const p = ur.dannye.poligony[pi] as (typeof ur.dannye.poligony)[number];
         const t = p.tochki;
         g.moveTo(this.ekX(t[0]?.[0] ?? 0), this.ekY(t[0]?.[1] ?? 0));
         for (let i = 1; i < t.length; i++)
