@@ -1,6 +1,7 @@
 // Кадр с одновременным удержанием нескольких клавиш: "KeyD+KeyW+KeyJ:2500"
 import { chromium } from '../../mars-colony/node_modules/playwright/index.mjs';
-const [,, out, scenario = ''] = process.argv;
+
+const [, , out, scenario = ''] = process.argv;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
 await page.goto('http://localhost:5180/');

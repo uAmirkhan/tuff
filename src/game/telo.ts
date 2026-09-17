@@ -133,7 +133,9 @@ export class Telo {
     const tx = nam.dx * TELO.tyagaGorizont;
     const ty = nam.dy > 0 ? nam.dy * TELO.tyagaVverh : nam.dy * TELO.tyagaVniz;
     // Спин: вращение вдоль поверхности контакта
-    const [cx, cy] = this.centr();
+    this.schitatCentr();
+    const cx = this.cx,
+      cy = this.cy;
     for (let i = this.ot; i < this.ot + this.n; i++) {
       m.px[i] = (m.px[i] as number) - tx;
       m.py[i] = (m.py[i] as number) - ty;
@@ -168,12 +170,15 @@ export class Telo {
       }
     }
     // защита от заклинивания: окно смещений центра масс
-    const [cx] = this.centr();
-    this.okno[this.oknoI] = cx;
+    this.schitatCentr();
+    this.okno[this.oknoI] = this.cx;
     this.oknoI = (this.oknoI + 1) % this.okno.length;
   }
 
-  centr(): [number, number] {
+  // Центр масс без выделения памяти: пишется в поля cx, cy
+  cx = 0;
+  cy = 0;
+  schitatCentr(): void {
     const m = this.mir;
     let sx = 0,
       sy = 0;
@@ -181,7 +186,13 @@ export class Telo {
       sx += m.x[i] as number;
       sy += m.y[i] as number;
     }
-    return [sx / this.n, sy / this.n];
+    this.cx = sx / this.n;
+    this.cy = sy / this.n;
+  }
+
+  centr(): [number, number] {
+    this.schitatCentr();
+    return [this.cx, this.cy];
   }
 
   // Доля «горизонтальной» опоры: 1 на полу или потолке, 0 на вертикальной стене, 0 без контакта
