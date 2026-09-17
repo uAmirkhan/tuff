@@ -24,6 +24,7 @@ export function proveritUroven(u: Uroven): string[] {
       (o.tip === 'lava' ||
         o.tip === 'ship' ||
         o.tip === 'voda' ||
+        o.tip === 'iney' ||
         o.tip === 'zaslonka' ||
         o.tip === 'porshen' ||
         o.tip === 'konveyer') &&

@@ -63,6 +63,7 @@ const PRYAMOUGOLNYE: TipObekta[] = [
   'lava',
   'ship',
   'voda',
+  'iney',
   'zaslonka',
   'obval',
   'porshen',

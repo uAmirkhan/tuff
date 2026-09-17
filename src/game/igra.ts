@@ -149,7 +149,14 @@ export class Igra {
   private raspisanieZon(): void {
     const t = this.takty / 60;
     for (const s of this.ur.sushchnosti) {
-      if (s.tip !== 'lava' && s.tip !== 'voda' && s.tip !== 'potok' && s.tip !== 'ship') continue;
+      if (
+        s.tip !== 'lava' &&
+        s.tip !== 'voda' &&
+        s.tip !== 'potok' &&
+        s.tip !== 'ship' &&
+        s.tip !== 'iney'
+      )
+        continue;
       if (!s.poRaspisaniyu || !(s.period > 0)) continue;
       const u = (((t + s.faza * s.period) % s.period) + s.period) % s.period;
       s.aktivna = s.vklyuchenaVRaspisanii && u < s.period / 2;
@@ -196,16 +203,20 @@ export class Igra {
     // Среда
     let vLave = false,
       vShipah = false,
-      vVode = false;
+      vVode = false,
+      vInee = false;
     for (const s of this.ur.sushchnosti) {
-      if (s.tip !== 'lava' && s.tip !== 'ship' && s.tip !== 'voda') continue;
+      if (s.tip !== 'lava' && s.tip !== 'ship' && s.tip !== 'voda' && s.tip !== 'iney') continue;
       if (!s.aktivna) continue;
       if (g.maxX > s.x && g.minX < s.x + s.w && g.maxY > s.y && g.minY < s.y + s.h) {
         if (s.tip === 'lava') vLave = true;
         else if (s.tip === 'ship') vShipah = true;
+        else if (s.tip === 'iney') vInee = true;
         else vVode = true;
       }
     }
+    // иней-камера: Корка надевается сама и спадает через секунду после выхода, урона нет
+    if (vInee) this.korkaDo = Math.max(this.korkaDo, this.takty + 60);
     if (vLave) {
       this.zhar = Math.min(ZHAR.maks, this.zhar + ZHAR.lechenieLavy);
       this.korkaDo = 0;
