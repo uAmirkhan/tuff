@@ -28,7 +28,9 @@ export type TipObekta =
   | 'ispytanie' // разметка для валидатора: начало испытания
   | 'plita' // нажимная плита, поле cel
   | 'rychag' // рычаг, поле cel
-  | 'zaslonka'; // дверь, открывается по ссылке
+  | 'zaslonka' // дверь, открывается по ссылке
+  | 'shlakozhuk' // враг: ползёт и жжёт холодом
+  | 'iskropryg'; // враг: то же, иногда прыгает
 
 export interface Obekt {
   tip: TipObekta;

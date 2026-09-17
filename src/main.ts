@@ -138,6 +138,7 @@ async function start(): Promise<void> {
       vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
       const t0 = performance.now();
+      igra?.doShaga();
       telo.primenit(nam, igra?.korkaSredy ?? false);
       for (const s of statisty) s.primenit(nam);
       mir.shag();
@@ -150,7 +151,7 @@ async function start(): Promise<void> {
     }
     telo.schitatCentr();
     stsena.sledit(telo.cx, telo.cy, ur?.dannye.granicy ?? null);
-    stsena.risovat(mir, [telo, ...statisty], nakoplen / MIR.shag, ur);
+    stsena.risovat(mir, [telo, ...statisty], nakoplen / MIR.shag, ur, igra?.vragi ?? []);
     risovatUi();
     kadrov++;
     if (now - fpsT > 500) {

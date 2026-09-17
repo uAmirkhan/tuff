@@ -1,6 +1,7 @@
 // Отрисовка мира в PixiJS: многоугольники уровня, объекты, контур тела по частицам.
 import { Application, Graphics } from 'pixi.js';
 import type { Telo } from '../game/telo';
+import type { Vrag } from '../game/vrag';
 import type { Uroven } from '../level/format';
 import type { ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
@@ -49,7 +50,13 @@ export class Stsena {
     }
   }
 
-  risovat(mir: Mir, tela: Telo[], alpha: number, ur: ZagruzhennyyUroven | null): void {
+  risovat(
+    mir: Mir,
+    tela: Telo[],
+    alpha: number,
+    ur: ZagruzhennyyUroven | null,
+    vragi: Vrag[] = [],
+  ): void {
     const g = this.g;
     g.clear();
     // многоугольники уровня
@@ -152,6 +159,27 @@ export class Stsena {
         g.lineTo(this.ekX(mir.oX2[o] as number), this.ekY(mir.oY2[o] as number));
         g.stroke({ width: 3, color: mir.oSherohovat[o] ? 0x6b5a4a : 0x8fb3c9 });
       }
+    }
+    // враги: холодные серо-синие, глаза по ходу
+    for (const v of vragi) {
+      if (!v.zhiv) continue;
+      const m = v.mir;
+      for (let i = 0; i < v.n; i++) {
+        const p = v.ot + i;
+        const x = (m.px[p] as number) + ((m.x[p] as number) - (m.px[p] as number)) * alpha;
+        const y = (m.py[p] as number) + ((m.y[p] as number) - (m.py[p] as number)) * alpha;
+        if (i === 0) g.moveTo(this.ekX(x), this.ekY(y));
+        else g.lineTo(this.ekX(x), this.ekY(y));
+      }
+      g.closePath();
+      g.fill({ color: v.tip === 'iskropryg' ? 0x5a7a9a : 0x4a5a6a });
+      g.stroke({ width: 2, color: 0x9fc4e0, alpha: 0.7 });
+      v.schitatCentr();
+      const ex = this.ekX(v.cx) + v.napravlenie * this.masshtab * 0.12;
+      const ey = this.ekY(v.cy) - this.masshtab * 0.05;
+      g.circle(ex - 5, ey, 3);
+      g.circle(ex + 5, ey, 3);
+      g.fill({ color: 0xdff4ff });
     }
     // тела: контур по частицам, материал по состоянию, свечение, глаза
     for (const t of tela) this.risovatTelo(t, alpha);

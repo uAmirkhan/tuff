@@ -1,8 +1,10 @@
 // Состояние прохождения уровня: жар, чекпоинты, собираемое, зоны, выход. Без рендера.
 import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
+import { BOY, VRAGI } from './config/vragi';
 import { ZHAR } from './config/zhar';
 import type { Namerenie, Telo } from './telo';
+import { Vrag } from './vrag';
 
 export type Sobytie =
   | { tip: 'sobrano'; chto: Sushchnost['tip']; ochki: number }
@@ -12,7 +14,9 @@ export type Sobytie =
   | { tip: 'vyhod'; takty: number; ochki: number; serdca: number }
   | { tip: 'zaslonka'; id: string; otkryta: boolean }
   | { tip: 'slomano'; poligon: number }
-  | { tip: 'storozh'; prichina: string };
+  | { tip: 'storozh'; prichina: string }
+  | { tip: 'vragUbit'; kem: 'korka' | 'sreda' }
+  | { tip: 'uronOtVraga' };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -26,12 +30,27 @@ export class Igra {
   korkaSredy = false;
   private korkaDo = 0;
 
+  readonly vragi: Vrag[] = [];
+
   constructor(
     readonly mir: Mir,
     readonly telo: Telo,
     readonly ur: ZagruzhennyyUroven,
   ) {
     this.chekpoint = [ur.dannye.start[0], ur.dannye.start[1]];
+    let zerno = 7;
+    for (const s of ur.sushchnosti) {
+      if (s.tip === 'shlakozhuk' || s.tip === 'iskropryg') {
+        this.vragi.push(new Vrag(mir, s.tip, s.x, s.y, zerno++));
+      }
+    }
+  }
+
+  // Вызывать до mir.shag(): ИИ врагов
+  doShaga(): void {
+    if (this.gotovo) return;
+    this.telo.schitatCentr();
+    for (const v of this.vragi) v.dumat(this.telo.cx, this.telo.cy, this.takty);
   }
 
   // Вызывать после mir.shag() и telo.posle()
@@ -119,6 +138,46 @@ export class Igra {
           break;
         default:
           break;
+      }
+    }
+    // Враги: урон игроку при касании, давление Коркой, среда
+    for (const v of this.vragi) {
+      if (!v.zhiv) continue;
+      const k = VRAGI[v.tip];
+      let kasanie = false;
+      for (let i = this.telo.ot; i < this.telo.ot + this.telo.n; i++) {
+        if (this.mir.kontaktTel[i] && this.mir.kontaktTelKontur[i] === v.kontur) kasanie = true;
+      }
+      for (let i = v.ot; i < v.ot + v.n; i++) {
+        if (this.mir.kontaktTel[i] && this.mir.kontaktTelKontur[i] === this.telo.kontur)
+          kasanie = true;
+      }
+      if (kasanie) {
+        if (this.telo.vKorke && BOY.korkaZashchishchaet) {
+          const udar = this.mir.udarTel[v.kontur] as number;
+          if (udar > BOY.porogDavleniya) v.zhar -= BOY.uronDavleniya;
+        } else {
+          this.zhar -= k.uronIgroku;
+          this.sobytiya.push({ tip: 'uronOtVraga' });
+        }
+      }
+      // среда: враг чувствительнее игрока
+      const gv = v.gabarity();
+      for (const s of this.ur.sushchnosti) {
+        if (s.tip !== 'lava' && s.tip !== 'ship' && s.tip !== 'voda') continue;
+        if (gv.maxX > s.x && gv.minX < s.x + s.w && gv.maxY > s.y && gv.minY < s.y + s.h) {
+          const bazovyy =
+            s.tip === 'lava'
+              ? ZHAR.lechenieLavy
+              : s.tip === 'ship'
+                ? ZHAR.uronShipov
+                : ZHAR.uronVody;
+          v.zhar -= bazovyy * BOY.sredaMnozhitel;
+        }
+      }
+      if (v.zhar <= 0) {
+        v.umeret();
+        this.sobytiya.push({ tip: 'vragUbit', kem: kasanie ? 'korka' : 'sreda' });
       }
     }
     // Хрупкие многоугольники: сломан один отрезок, рушится весь
