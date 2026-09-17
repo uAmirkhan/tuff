@@ -59,7 +59,15 @@ export interface TiledKarta {
 
 const MATERIALY: Material[] = ['bazalt', 'lyod', 'hrupkiy', 'metall'];
 // Объекты с шириной и высотой: x,y у нас левый нижний угол
-const PRYAMOUGOLNYE: TipObekta[] = ['lava', 'ship', 'voda', 'zaslonka', 'obval'];
+const PRYAMOUGOLNYE: TipObekta[] = [
+  'lava',
+  'ship',
+  'voda',
+  'zaslonka',
+  'obval',
+  'porshen',
+  'konveyer',
+];
 // Поля Obekt, которые переносятся свойствами как есть
 const POLYA_OBEKTA = [
   'cel',
@@ -72,6 +80,11 @@ const POLYA_OBEKTA = [
   'zaderzhka',
   'razryv',
   'zapas',
+  'hodX',
+  'hodY',
+  'period',
+  'faza',
+  'pauza',
 ] as const;
 const POLYA_UROVNYA = [
   'id',
