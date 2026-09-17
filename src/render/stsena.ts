@@ -18,7 +18,9 @@ const TSVET_MATERIALA: Record<string, number> = {
 export class Stsena {
   readonly app = new Application();
   readonly fon = new Fon();
-  readonly kray = new Graphics(); // кромки поверхностей и текстура
+  readonly kray = new Graphics(); // кромки поверхностей и текстура (статический слой)
+  readonly statika = new Graphics(); // многоугольники уровня (статический слой)
+  private statikaKlyuch = ''; // уровень и набор сломанных, для которых построен слой
   readonly g = new Graphics();
   masshtab = 60; // пикселей на единицу
   readonly pokazannye = new Set<string>(); // способности, которые игрок уже применил
@@ -30,8 +32,9 @@ export class Stsena {
     await this.app.init({ background: '#1a1418', resizeTo: window, antialias: true });
     document.body.appendChild(this.app.canvas);
     this.app.stage.addChild(this.fon.konteyner);
-    this.app.stage.addChild(this.g);
+    this.app.stage.addChild(this.statika);
     this.app.stage.addChild(this.kray);
+    this.app.stage.addChild(this.g);
     this.masshtab = Math.max(40, Math.min(70, this.app.screen.height / 9));
   }
 
@@ -67,65 +70,16 @@ export class Stsena {
   ): void {
     const g = this.g;
     g.clear();
-    this.kray.clear();
     this.znachki.length = 0;
     this.fon.postroit(this.app.screen.width, this.app.screen.height);
     this.fon.obnovit(this.kamX, this.kamY, this.masshtab);
-    // многоугольники уровня
+    // многоугольники уровня: статический слой строится один раз, камера двигает его целиком
     if (ur) {
-      for (let pi = 0; pi < ur.dannye.poligony.length; pi++) {
-        if (ur.slomany[pi]) continue;
-        const p = ur.dannye.poligony[pi] as (typeof ur.dannye.poligony)[number];
-        const t = p.tochki;
-        g.moveTo(this.ekX(t[0]?.[0] ?? 0), this.ekY(t[0]?.[1] ?? 0));
-        for (let i = 1; i < t.length; i++)
-          g.lineTo(this.ekX(t[i]?.[0] ?? 0), this.ekY(t[i]?.[1] ?? 0));
-        g.closePath();
-        g.fill({ color: TSVET_MATERIALA[p.material ?? 'bazalt'] ?? 0x4a3a34 });
-        // кромка: светлая полоса по верхним рёбрам, чтобы тело читало опору; лёд блестит
-        const k = this.kray;
-        const led = p.material === 'lyod';
-        for (let i = 0; i < t.length; i++) {
-          const a = t[i] as [number, number];
-          const b = t[(i + 1) % t.length] as [number, number];
-          if (Math.abs(a[1] - b[1]) > 0.01 && !led) continue; // только горизонтальные рёбра
-          k.moveTo(this.ekX(a[0]), this.ekY(a[1]));
-          k.lineTo(this.ekX(b[0]), this.ekY(b[1]));
-        }
-        k.stroke({ width: led ? 3 : 2, color: led ? 0xcfe9f7 : 0x7a5a48, alpha: led ? 0.9 : 0.55 });
-        // трещины базальта: детерминированные штрихи внутри многоугольника
-        if (!led && p.material !== 'hrupkiy') {
-          const x0 = Math.min(...t.map((q) => q[0])),
-            x1 = Math.max(...t.map((q) => q[0]));
-          const y0 = Math.min(...t.map((q) => q[1])),
-            y1 = Math.max(...t.map((q) => q[1]));
-          const sh = Math.max(1, Math.floor((x1 - x0) * (y1 - y0) * 0.35));
-          let z = pi * 7919 + 13;
-          for (let s = 0; s < Math.min(sh, 60); s++) {
-            z = (z * 1103515245 + 12345) & 0x7fffffff;
-            const fx = x0 + (((z >> 8) % 1000) / 1000) * (x1 - x0);
-            z = (z * 1103515245 + 12345) & 0x7fffffff;
-            const fy = y0 + (((z >> 8) % 1000) / 1000) * (y1 - y0);
-            z = (z * 1103515245 + 12345) & 0x7fffffff;
-            const dl = 0.15 + ((z >> 8) % 100) / 400;
-            k.moveTo(this.ekX(fx), this.ekY(fy));
-            k.lineTo(this.ekX(fx + dl), this.ekY(fy - dl * 0.4));
-          }
-          k.stroke({ width: 1, color: 0x2a1c18, alpha: 0.7 });
-        }
-        if (p.material === 'hrupkiy') {
-          // хрупкое: сетка трещин крест-накрест
-          const x0 = Math.min(...t.map((q) => q[0])),
-            x1 = Math.max(...t.map((q) => q[0]));
-          const y0 = Math.min(...t.map((q) => q[1])),
-            y1 = Math.max(...t.map((q) => q[1]));
-          for (let x = x0 + 0.5; x < x1; x += 1) {
-            k.moveTo(this.ekX(x), this.ekY(y0));
-            k.lineTo(this.ekX(x + 0.2), this.ekY(y1));
-          }
-          k.stroke({ width: 1.5, color: 0xffb347, alpha: 0.5 });
-        }
-      }
+      this.postroitStatiku(ur);
+      const sx = this.app.screen.width / 2 - this.kamX * this.masshtab;
+      const sy = this.app.screen.height / 2 + this.kamY * this.masshtab;
+      this.statika.position.set(sx, sy);
+      this.kray.position.set(sx, sy);
       // объекты
       for (const s of ur.sushchnosti) {
         const x = this.ekX(s.x),
@@ -329,6 +283,64 @@ export class Stsena {
     }
     // тела: контур по частицам, материал по состоянию, свечение, глаза
     for (const t of tela) this.risovatTelo(t, alpha);
+  }
+
+  // Статический слой уровня: перестраивается при смене уровня или разрушении многоугольника
+  private postroitStatiku(ur: ZagruzhennyyUroven): void {
+    const klyuch = `${ur.dannye.id}:${ur.slomany.map((b) => (b ? 1 : 0)).join('')}:${this.masshtab}`;
+    if (klyuch === this.statikaKlyuch) return;
+    this.statikaKlyuch = klyuch;
+    const g = this.statika;
+    const k = this.kray;
+    g.clear();
+    k.clear();
+    const m = this.masshtab;
+    const X = (x: number) => x * m;
+    const Y = (y: number) => -y * m;
+    for (let pi = 0; pi < ur.dannye.poligony.length; pi++) {
+      if (ur.slomany[pi]) continue;
+      const p = ur.dannye.poligony[pi] as (typeof ur.dannye.poligony)[number];
+      const t = p.tochki;
+      g.moveTo(X(t[0]?.[0] ?? 0), Y(t[0]?.[1] ?? 0));
+      for (let i = 1; i < t.length; i++) g.lineTo(X(t[i]?.[0] ?? 0), Y(t[i]?.[1] ?? 0));
+      g.closePath();
+      g.fill({ color: TSVET_MATERIALA[p.material ?? 'bazalt'] ?? 0x4a3a34 });
+      const led = p.material === 'lyod';
+      for (let i = 0; i < t.length; i++) {
+        const a = t[i] as [number, number];
+        const b = t[(i + 1) % t.length] as [number, number];
+        if (Math.abs(a[1] - b[1]) > 0.01 && !led) continue;
+        k.moveTo(X(a[0]), Y(a[1]));
+        k.lineTo(X(b[0]), Y(b[1]));
+      }
+      k.stroke({ width: led ? 3 : 2, color: led ? 0xcfe9f7 : 0x7a5a48, alpha: led ? 0.9 : 0.55 });
+      const x0 = Math.min(...t.map((q) => q[0])),
+        x1 = Math.max(...t.map((q) => q[0]));
+      const y0 = Math.min(...t.map((q) => q[1])),
+        y1 = Math.max(...t.map((q) => q[1]));
+      if (!led && p.material !== 'hrupkiy') {
+        const sh = Math.max(1, Math.floor((x1 - x0) * (y1 - y0) * 0.35));
+        let z = pi * 7919 + 13;
+        for (let s = 0; s < Math.min(sh, 60); s++) {
+          z = (z * 1103515245 + 12345) & 0x7fffffff;
+          const fx = x0 + (((z >> 8) % 1000) / 1000) * (x1 - x0);
+          z = (z * 1103515245 + 12345) & 0x7fffffff;
+          const fy = y0 + (((z >> 8) % 1000) / 1000) * (y1 - y0);
+          z = (z * 1103515245 + 12345) & 0x7fffffff;
+          const dl = 0.15 + ((z >> 8) % 100) / 400;
+          k.moveTo(X(fx), Y(fy));
+          k.lineTo(X(fx + dl), Y(fy - dl * 0.4));
+        }
+        k.stroke({ width: 1, color: 0x2a1c18, alpha: 0.7 });
+      }
+      if (p.material === 'hrupkiy') {
+        for (let x = x0 + 0.5; x < x1; x += 1) {
+          k.moveTo(X(x), Y(y0));
+          k.lineTo(X(x + 0.2), Y(y1));
+        }
+        k.stroke({ width: 1.5, color: 0xffb347, alpha: 0.5 });
+      }
+    }
   }
 
   private risovatTelo(t: Telo, alpha: number): void {
