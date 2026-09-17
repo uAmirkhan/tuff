@@ -120,8 +120,8 @@ export class Telo {
             : 'obychnoe';
     if (nam.dx > 0.2) this.napravlenie = 1;
     else if (nam.dx < -0.2) this.napravlenie = -1;
-    // Расплав рвёт Вязкость
-    if (nam.rasplav || !nam.vyazkost) m.otlepitVse(this.ot, this.ot + this.n);
+    // Расплав рвёт Вязкость; Корка (своя или принудительная от инея и воды) не липнет: иней-таймер сбрасывает со стены
+    if (nam.rasplav || !nam.vyazkost || korka) m.otlepitVse(this.ot, this.ot + this.n);
     // Ползание: якоря прилипших точек сдвигаются вдоль опоры по вводу
     if (nam.vyazkost && (nam.dx !== 0 || nam.dy !== 0)) {
       const shag = TELO.polzanie * MIR.shag;
@@ -172,7 +172,7 @@ export class Telo {
   // Вызывать после mir.shag(): создать связи Вязкости по контактам этого такта.
   posle(nam: Namerenie): void {
     const m = this.mir;
-    if (nam.vyazkost && !nam.rasplav) {
+    if (nam.vyazkost && !nam.rasplav && !this.korkaByla) {
       for (let i = this.ot; i < this.ot + this.n; i++) {
         if (m.vPoTochke[i] !== -1) continue;
         if (m.kontakt[i]) {

@@ -44,11 +44,10 @@ describe('прохождение k1-4 «Иней-камеры»', () => {
     const { igra, sled, ur } = proyti([
       { takty: 200, nam: { dx: 1 } },
       { takty: 170, nam: { dx: 1, dy: 1, vyazkost: true } }, // A: иней-стена за три секунды
-      { takty: 800, nam: { dx: 1, dy: 1, vyazkost: true } }, // B, C: потолок над водой, коридор, Скачок
-      { takty: 200, nam: { dx: 1 } },
-      { takty: 300, nam: { dx: 1, korka: true } },
-      { takty: 420, nam: { dx: 1 } },
-      { takty: 260, nam: { dx: 1, dy: 1, vyazkost: true } }, // E: иней-потолок
+      { takty: 380, nam: { dx: 1, dy: 1, vyazkost: true } }, // B: сплошной потолок над водой до площадки
+      { takty: 40, nam: { dx: 1 } }, // C: с площадки в коридор, к Скачку и плите на 29,5
+      { takty: 120, nam: { dx: 1, korka: true } }, // Корка давит Скачка на плите, дверь; тяжёлым докатывается до ступени-гасителя
+      { takty: 300, nam: { dx: 1, dy: 1, vyazkost: true } }, // E: иней-потолок над ямой 5,5 за три секунды
       { takty: 400, nam: { dx: 1 } },
     ]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
