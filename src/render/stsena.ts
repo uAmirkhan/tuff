@@ -154,6 +154,23 @@ export class Stsena {
             }
             break;
           }
+          case 'iney': {
+            // иней-камера: бледная морозная зона со снежинками-штрихами
+            if (!s.aktivna) break;
+            const m = this.masshtab;
+            g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * m, s.h * m);
+            g.fill({ color: 0xcfe9f7, alpha: 0.1 });
+            for (let i = 0; i < Math.floor(s.w * 2); i++) {
+              const px = s.x + (i + 0.5) / 2;
+              const py = s.y + s.h * (0.3 + ((i * 7) % 5) / 8);
+              g.moveTo(this.ekX(px - 0.08), this.ekY(py));
+              g.lineTo(this.ekX(px + 0.08), this.ekY(py));
+              g.moveTo(this.ekX(px), this.ekY(py - 0.08));
+              g.lineTo(this.ekX(px), this.ekY(py + 0.08));
+            }
+            g.stroke({ width: 1.5, color: 0xdff4ff, alpha: 0.5 });
+            break;
+          }
           case 'potok': {
             // поток: полупрозрачная зона со стрелками по направлению силы
             if (!s.aktivna) break;
