@@ -154,7 +154,10 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       const b = t[(i + 1) % t.length] as [number, number];
       const o = mir.dobavitOtrezok(a[0], a[1], b[0], b[1], mat.trenie, mat.sherohovat, 1);
       mir.oGlubina[o] = glubina;
-      if (p.material === 'hrupkiy') mir.hrupkost[o] = p.hrupkost ?? 1.2;
+      // хрупкость только на гранях, смотрящих вверх: удар снизу (тело подпрыгнуло с пандуса под полкой)
+      // не должен ломать полку. Обход по часовой, наружная нормаль (-ey, ex): вверх при ex > 0
+      const vverh = (b[0] - a[0]) / Math.hypot(b[0] - a[0], b[1] - a[1]) > 0.3;
+      if (p.material === 'hrupkiy' && vverh) mir.hrupkost[o] = p.hrupkost ?? 1.2;
     }
     poligonOtrezki.push({ ot, n: t.length, material: p.material ?? 'bazalt' });
   }
@@ -209,7 +212,7 @@ export function zagruzitUroven(mir: Mir, u: Uroven): ZagruzhennyyUroven {
       nuzhnaKorka: o.nuzhnaKorka ?? false,
       fiksiruetsya: o.fiksiruetsya ?? true,
       verh: o.y,
-      skorost: o.skorost ?? 1,
+      skorost: o.skorost ?? (o.tip === 'voda' ? 0 : 1),
       zaderzhka: o.zaderzhka ?? (o.tip === 'iney' ? 0 : 2),
       aktivna:
         o.tip === 'lava' ||
