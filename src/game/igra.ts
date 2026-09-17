@@ -1,6 +1,7 @@
 // Состояние прохождения уровня: жар, чекпоинты, собираемое, зоны, выход. Без рендера.
 import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
+import { TroynoyKotyol } from './boss';
 import { BOY, VRAGI } from './config/vragi';
 import { ZHAR } from './config/zhar';
 import type { Namerenie, Telo } from './telo';
@@ -17,7 +18,8 @@ export type Sobytie =
   | { tip: 'storozh'; prichina: string }
   | { tip: 'vragUbit'; kem: 'korka' | 'sreda' }
   | { tip: 'uronOtVraga' }
-  | { tip: 'cepPorvana'; id: string };
+  | { tip: 'cepPorvana'; id: string }
+  | { tip: 'boss'; chto: string };
 
 export class Igra {
   zhar: number = ZHAR.maks;
@@ -32,6 +34,7 @@ export class Igra {
   private korkaDo = 0;
 
   readonly vragi: Vrag[] = [];
+  boss: TroynoyKotyol | null = null;
 
   constructor(
     readonly mir: Mir,
@@ -44,6 +47,9 @@ export class Igra {
       if (s.tip === 'shlakozhuk' || s.tip === 'iskropryg') {
         this.vragi.push(new Vrag(mir, s.tip, s.x, s.y, zerno++));
       }
+    }
+    if (ur.sushchnosti.some((s) => s.tip === 'kotyol')) {
+      this.boss = new TroynoyKotyol(mir, ur.sushchnosti, this.vragi);
     }
   }
 
@@ -69,6 +75,7 @@ export class Igra {
       vVode = false;
     for (const s of this.ur.sushchnosti) {
       if (s.tip !== 'lava' && s.tip !== 'ship' && s.tip !== 'voda') continue;
+      if (!s.aktivna) continue;
       if (g.maxX > s.x && g.minX < s.x + s.w && g.maxY > s.y && g.minY < s.y + s.h) {
         if (s.tip === 'lava') vLave = true;
         else if (s.tip === 'ship') vShipah = true;
@@ -111,6 +118,7 @@ export class Igra {
           }
           break;
         case 'vyhod':
+          if (this.ur.dannye.vyhodPosleBossa && this.boss && !this.boss.pobezhdyon) break;
           if (d < ZHAR.radiusVyhoda) {
             this.gotovo = true;
             this.sobytiya.push({
@@ -167,6 +175,7 @@ export class Igra {
       const gv = v.gabarity();
       for (const s of this.ur.sushchnosti) {
         if (s.tip !== 'lava' && s.tip !== 'ship' && s.tip !== 'voda') continue;
+        if (!s.aktivna) continue;
         if (gv.maxX > s.x && gv.minX < s.x + s.w && gv.maxY > s.y && gv.minY < s.y + s.h) {
           const bazovyy =
             s.tip === 'lava'
@@ -200,6 +209,26 @@ export class Igra {
         this.sobytiya.push({ tip: 'slomano', poligon: idx });
       }
     }
+    // Босс
+    if (this.boss && !this.boss.pobezhdyon) {
+      const m = this.mir;
+      let vy = 0;
+      for (let i = this.telo.ot; i < this.telo.ot + this.telo.n; i++)
+        vy += (m.py[i] as number) - (m.y[i] as number);
+      vy /= this.telo.n; // положительное = движение вниз
+      const lava = this.ur.sushchnosti.some(
+        (s) => s.tip === 'lava' && s.aktivna && s.id === 'zaliv',
+      );
+      const bylo = this.boss.sobytiya.length;
+      this.boss.takt(g, this.telo.vKorke, vy, lava, 100 + this.takty);
+      for (let i = bylo; i < this.boss.sobytiya.length; i++)
+        this.sobytiya.push({ tip: 'boss', chto: this.boss.sobytiya[i] as string });
+      if (this.boss.pobezhdyon) {
+        for (const s of this.ur.sushchnosti)
+          if (s.tip === 'zaslonka' && s.id === 'vyhod-zaslonka') this.pereklyuchit(s.id, true);
+        for (const v of this.vragi) if (v.zhiv) v.umeret();
+      }
+    }
     // Обвал: поднимается после задержки, касание тела снизу убивает
     for (const s of this.ur.sushchnosti) {
       if (s.tip !== 'obval') continue;
@@ -221,6 +250,10 @@ export class Igra {
   private pereklyuchit(id: string, otkryt: boolean): void {
     const z = this.ur.sushchnosti.find((s) => s.id === id);
     if (!z) return;
+    if (z.tip === 'lava' || z.tip === 'ship' || z.tip === 'voda') {
+      z.aktivna = otkryt;
+      return;
+    }
     if (z.tip === 'zaslonka') {
       if (otkryt) for (const o of z.otrezki) this.mir.ubratOtrezok(o);
       else for (const o of z.otrezki) this.mir.oZhiv[o] = 1;
