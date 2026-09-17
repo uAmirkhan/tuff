@@ -175,6 +175,28 @@ export class Telo {
     this.oknoI = (this.oknoI + 1) % this.okno.length;
   }
 
+  // Восстановить кольцо в точке: возрождение и сторожа. Скорости обнуляются, якоря рвутся.
+  vosstanovit(cx: number, cy: number, prichina: string): void {
+    const m = this.mir;
+    m.otlepitVse(this.ot, this.ot + this.n);
+    let ux = 1,
+      uy = 0;
+    for (let i = 0; i < this.n; i++) {
+      const p = this.ot + i;
+      m.x[p] = cx + ux * TELO.radius;
+      m.y[p] = cy + uy * TELO.radius;
+      m.px[p] = m.x[p] as number;
+      m.py[p] = m.y[p] as number;
+      m.kontakt[p] = 0;
+      const nx = ux * COS - uy * SIN;
+      const ny = ux * SIN + uy * COS;
+      ux = nx;
+      uy = ny;
+    }
+    m.zhurnal.push(`такт ${m.takt}: тело восстановлено, ${prichina}`);
+    if (m.zhurnal.length > 200) m.zhurnal.shift();
+  }
+
   // Центр масс без выделения памяти: пишется в поля cx, cy
   cx = 0;
   cy = 0;

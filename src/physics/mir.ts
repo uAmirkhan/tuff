@@ -63,7 +63,7 @@ export class Mir {
   slomano: number[] = [];
 
   // Пространственная сетка отрезков: ячейки размером SETKA, списки в формате CSR
-  private setkaGryaznaya = true;
+  setkaGryaznaya = true;
   private setkaMinX = 0;
   private setkaMinY = 0;
   private setkaW = 1;
