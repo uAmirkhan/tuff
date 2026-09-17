@@ -11,6 +11,7 @@ export const SETKA = 2; // размер ячейки сетки отрезков
 export const MAX_YACHEEK = 65536;
 const ZAPAS = 0.6; // запас границ отрезка под глубину односторонней стороны
 const MAKS_RAZVEDENIE = 0.04; // предел разведения двух тел за подшаг
+const ZAPAS_TEL = 0.15; // запас вокруг прямоугольника контура при проверке близости тел
 const GLUBINA = 0.5; // глубина по умолчанию, с которой односторонний отрезок выталкивает сидящую внутри частицу
 
 export interface ParametryMira {
@@ -245,7 +246,13 @@ export class Mir {
     this.cPloshchad[i] = this.ploshchadKontura(ot, n);
     this.cZhest[i] = zhest;
     this.cKazhdyy[i] = kazhdyy;
+    this.cKontakt[i] = 1;
     return i;
+  }
+
+  // Контур без контакта с другими телами (статисты замера): только уровень
+  otklyuchitKontaktTel(kontur: number): void {
+    this.cKontakt[kontur] = 0;
   }
 
   ploshchadKontura(ot: number, n: number): number {
@@ -475,6 +482,7 @@ export class Mir {
   readonly kontaktTel = new Uint8Array(MAX_TOCHEK); // 1 = частица касалась другого тела в такте
   readonly kontaktTelKontur = new Int32Array(MAX_TOCHEK); // индекс контура, которого коснулись
   readonly udarTel = new Float64Array(MAX_KONTUROV); // импульс, полученный контуром от других тел за такт
+  readonly cKontakt = new Uint8Array(MAX_KONTUROV); // 1: контур сталкивается с другими телами
 
   // описанные прямоугольники контуров, считаются один раз на подшаг
   private readonly cMinX = new Float64Array(MAX_KONTUROV);
@@ -504,19 +512,26 @@ export class Mir {
       this.cMaxY[a] = a3;
     }
     for (let a = 0; a < this.c; a++) {
+      if (!this.cKontakt[a]) continue;
       for (let b = 0; b < this.c; b++) {
-        if (a === b) continue;
+        if (a === b || !this.cKontakt[b]) continue;
         // грубая проверка: пересекаются ли описанные прямоугольники
         if (!this.konturyRyadom(a, b)) continue;
         const otA = this.cOt[a] as number,
           nA = this.cN[a] as number;
         const otB = this.cOt[b] as number,
           nB = this.cN[b] as number;
+        const bx0 = (this.cMinX[b] as number) - ZAPAS_TEL,
+          bx1 = (this.cMaxX[b] as number) + ZAPAS_TEL,
+          by0 = (this.cMinY[b] as number) - ZAPAS_TEL,
+          by1 = (this.cMaxY[b] as number) + ZAPAS_TEL;
         for (let i = 0; i < nA; i++) {
           const p = otA + i;
           const x = this.x[p] as number,
             y = this.y[p] as number,
             r = this.radius[p] as number;
+          // частица вне прямоугольника чужого контура не может ни быть внутри, ни касаться ребра
+          if (x < bx0 || x > bx1 || y < by0 || y > by1) continue;
           if (!this.vnutriKontura(otB, nB, x, y)) {
             // снаружи: проверяем близость к рёбрам
             this.ottolknutOtRebra(p, otB, nB, x, y, r, b);
@@ -628,7 +643,7 @@ export class Mir {
   }
 
   private konturyRyadom(a: number, b: number): boolean {
-    const z = 0.15;
+    const z = ZAPAS_TEL;
     return (
       (this.cMinX[a] as number) - z < (this.cMaxX[b] as number) &&
       (this.cMaxX[a] as number) + z > (this.cMinX[b] as number) &&
