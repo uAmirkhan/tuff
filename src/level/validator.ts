@@ -27,7 +27,8 @@ export function proveritUroven(u: Uroven): string[] {
         o.tip === 'iney' ||
         o.tip === 'zaslonka' ||
         o.tip === 'porshen' ||
-        o.tip === 'konveyer') &&
+        o.tip === 'konveyer' ||
+        o.tip === 'kriostat') &&
       (!o.w || !o.h)
     )
       oshibki.push(`${o.tip} ${o.id ?? '?'} без размеров`);

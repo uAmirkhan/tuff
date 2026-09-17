@@ -1,6 +1,7 @@
 // Отрисовка мира в PixiJS: многоугольники уровня, объекты, контур тела по частицам.
 import { Application, Graphics } from 'pixi.js';
-import type { TroynoyKotyol } from '../game/boss';
+import { TroynoyKotyol } from '../game/boss';
+import { Kriostat } from '../game/kriostat';
 import type { Telo } from '../game/telo';
 import type { Vrag } from '../game/vrag';
 import type { Uroven } from '../level/format';
@@ -65,7 +66,7 @@ export class Stsena {
     alpha: number,
     ur: ZagruzhennyyUroven | null,
     vragi: Vrag[] = [],
-    boss: TroynoyKotyol | null = null,
+    boss: TroynoyKotyol | Kriostat | null = null,
     prizrak: Telo | null = null,
   ): void {
     const g = this.g;
@@ -92,7 +93,10 @@ export class Stsena {
             break;
           case 'kotyol': {
             const m = this.masshtab;
-            const k = boss?.kotly[boss.sushchnosti.filter((q) => q.tip === 'kotyol').indexOf(s)];
+            const k =
+              boss instanceof TroynoyKotyol
+                ? boss.kotly[boss.sushchnosti.filter((q) => q.tip === 'kotyol').indexOf(s)]
+                : undefined;
             const zhiv = k ? k.zhiv : true;
             const otkryt = k ? k.otkryt : false;
             g.rect(x - 1.1 * m, y - 2.0 * m, 2.2 * m, 2.0 * m);
@@ -107,6 +111,74 @@ export class Stsena {
             if (otkryt) {
               g.circle(x, y - 2.5 * m, 0.3 * m);
               g.fill({ color: 0xffd23f, alpha: 0.8 });
+            }
+            break;
+          }
+          case 'kriostat': {
+            // опыт «Криостат»: гусеницы, стальной корпус, стекло с магмой, манипуляторы по состоянию
+            const m = this.masshtab;
+            const k = boss instanceof Kriostat ? boss : null;
+            const w = s.w * m,
+              h = s.h * m;
+            const razbit = k?.pobezhdyon ?? false;
+            g.roundRect(x, y - 0.42 * m, w, 0.42 * m, 6);
+            g.fill({ color: 0x24272d });
+            for (let i = 0; i < 4; i++) {
+              g.circle(x + w * (0.15 + 0.2333 * i), y - 0.21 * m, 0.13 * m);
+              g.fill({ color: 0x5a6070 });
+            }
+            g.rect(x + 0.1 * m, y - h + 0.55 * m, w - 0.2 * m, h - 0.97 * m);
+            g.fill({ color: razbit ? 0x2a2f36 : 0x3a3f4a });
+            g.stroke({ width: 2, color: 0x8fb4c8, alpha: 0.6 });
+            // стекло и магма внутри
+            g.roundRect(x + 0.2 * m, y - h, w - 0.4 * m, 0.6 * m, 6);
+            g.fill({ color: 0x9fd4e8, alpha: razbit ? 0.2 : 0.5 });
+            if (!razbit) {
+              const puls = 0.5 + 0.3 * Math.sin(performance.now() / 180);
+              g.roundRect(x + 0.35 * m, y - h + 0.12 * m, w - 0.7 * m, 0.36 * m, 5);
+              g.fill({ color: 0xff6a1a, alpha: puls });
+            }
+            g.roundRect(x + 0.2 * m, y - h, w - 0.4 * m, 0.6 * m, 6);
+            g.stroke({ width: 2, color: 0xcfe9f5, alpha: 0.8 });
+            // трещины: по одной на удар и на перепад
+            const treshchin = (k?.udarov ?? 0) + (k?.treshchin ?? 0) + (razbit ? 2 : 0);
+            for (let i = 0; i < treshchin; i++) {
+              const tx = x + w * (0.3 + 0.15 * i);
+              g.moveTo(tx, y - h);
+              g.lineTo(tx + 0.12 * m, y - h + 0.25 * m);
+              g.lineTo(tx - 0.06 * m, y - h + 0.5 * m);
+              g.stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+            }
+            // манипуляторы: сложены в окне, раскинуты в хватке, полусогнуты иначе
+            const sost = k?.sostoyanie ?? 'pauza';
+            const razmah = sost === 'hvatka' ? 1.9 : sost === 'okno' || razbit ? 0.25 : 0.9;
+            const vysota = sost === 'hvatka' ? 0.2 : sost === 'okno' || razbit ? 0.3 : 0.9;
+            for (const st of [-1, 1]) {
+              const px = st > 0 ? x + w - 0.15 * m : x + 0.15 * m;
+              const py = y - h + 0.6 * m;
+              g.moveTo(px, py);
+              g.lineTo(px + st * razmah * m, py - vysota * m);
+              g.lineTo(px + st * razmah * m + st * 0.15 * m, py - vysota * m + 0.35 * m);
+              g.stroke({ width: 4, color: 0x8a94a6, alpha: 0.95 });
+            }
+            // обдув: облако инея над стеклом
+            if (sost === 'obduv') {
+              for (let i = 0; i < 7; i++) {
+                const ox =
+                  x + w / 2 + (i - 3) * 0.55 * m + 0.1 * m * Math.sin(performance.now() / 90 + i);
+                g.circle(ox, y - h - (0.3 + 0.25 * ((i * 7) % 4)) * m, 0.22 * m);
+                g.fill({ color: 0xd8f0ff, alpha: 0.55 });
+              }
+            }
+            // разбитый бак: из него растёт иней
+            if (razbit) {
+              for (let i = 0; i < 5; i++) {
+                const ix = x + w * (0.2 + 0.15 * i);
+                g.moveTo(ix, y - h + 0.1 * m);
+                g.lineTo(ix + 0.1 * m, y - h - (0.5 + 0.3 * (i % 2)) * m);
+                g.lineTo(ix + 0.22 * m, y - h + 0.1 * m);
+                g.fill({ color: 0xe6f6ff, alpha: 0.85 });
+              }
             }
             break;
           }
@@ -125,8 +197,10 @@ export class Stsena {
             break;
           }
           case 'voda':
+            // выключенная зона (форсунка до рычага, завеса в паузе) видна тонким контуром
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);
-            g.fill({ color: 0x2f7f9f, alpha: 0.6 });
+            if (s.aktivna) g.fill({ color: 0x2f7f9f, alpha: 0.6 });
+            else g.stroke({ width: 1, color: 0x2f7f9f, alpha: 0.35 });
             break;
           case 'ship':
             g.rect(this.ekX(s.x), this.ekY(s.y + s.h), s.w * this.masshtab, s.h * this.masshtab);

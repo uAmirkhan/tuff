@@ -68,14 +68,16 @@ function proyti(rezhim: Rezhim, maksTaktov: number) {
           yarus = Math.max(0, Math.floor((y - 0.6) / SHAG));
         }
       }
-      if (rezhim === 'vetka' && faza === 'katit' && yarus === 0 && igra.serdca === 0) nam = { ...PUSTOE, dx: -1 };
+      if (rezhim === 'vetka' && faza === 'katit' && yarus === 0 && igra.serdca === 0)
+        nam = { ...PUSTOE, dx: -1 };
     }
     igra.doShaga();
     telo.primenit(nam, igra.korkaSredy);
     mir.shag();
     telo.posle(nam);
     igra.takt(nam);
-    for (const e of igra.sobytiya) if (e.tip === 'smert' && Number.isNaN(vodaPosleSmerti)) vodaPosleSmerti = voda.y + voda.h;
+    for (const e of igra.sobytiya)
+      if (e.tip === 'smert' && Number.isNaN(vodaPosleSmerti)) vodaPosleSmerti = voda.y + voda.h;
     if (igra.gotovo) break;
   }
   telo.schitatCentr();

@@ -32,7 +32,7 @@ describe('босс Тройной котёл', () => {
   it('валидатор и создание босса', () => {
     expect(proveritUroven(UROVEN_1_7)).toEqual([]);
     const { igra } = stsena();
-    expect(igra.boss?.kotly.length).toBe(3);
+    expect((igra.boss as TroynoyKotyol).kotly.length).toBe(3);
   });
 
   it('котлы открываются по очереди и выпускают Шлакожуков', () => {
