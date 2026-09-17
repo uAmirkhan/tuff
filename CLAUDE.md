@@ -28,6 +28,9 @@ npm run dev        # локально, открыть на телефоне по
 
 Данные частиц и связей в типизированных массивах, без выделения памяти в такте. В симуляции нет `Math.sin`, `Math.cos`, `Math.pow`, `Math.random`.
 
+## Уровни
+- Формат `src/level/format.ts`, уровни в `src/level/urovni/*.ts` или картами Tiled (`src/level/tiled.ts`, `npm run karty`). Планы уровней и требования к ярусу: `../wiki/saas/projects/gish-naslednik/13-plany-urovney.md`. Сюжет и имена: `10-syuzhetnaya-bibliya.md` («Скважина»).
+
 ## Числа
 
 Все параметры тела и способностей в `src/game/config/`. Число в коде вне конфига это баг.
