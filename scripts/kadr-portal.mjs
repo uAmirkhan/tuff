@@ -4,7 +4,10 @@ import { chromium } from '../../mars-colony/node_modules/playwright/index.mjs';
 
 const [, , out, query = '', scenario = '', w = '1280', h = '720'] = process.argv;
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: Number(w), height: Number(h) }, deviceScaleFactor: 1 });
+const page = await browser.newPage({
+  viewport: { width: Number(w), height: Number(h) },
+  deviceScaleFactor: 1,
+});
 page.on('pageerror', (e) => console.log('[error]', e.message));
 await page.goto(`http://localhost:5180/?${query}`);
 await page.waitForTimeout(1500);

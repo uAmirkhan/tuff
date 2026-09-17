@@ -3,7 +3,7 @@ import { Graphics, Text } from 'pixi.js';
 import { Zvuk } from './audio/zvuk';
 import { MIR } from './game/config/telo';
 import { Igra } from './game/igra';
-import { Telo } from './game/telo';
+import { PUSTOE, Telo } from './game/telo';
 import { Prizrak, Zapis } from './game/zapis';
 import { Vvod } from './input/vvod';
 import type { Uroven } from './level/format';
@@ -189,7 +189,35 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') menyuPokazano ? skrytMenyu() : pokazatMenyu();
 });
 
+// Свободные точки уровня для статистов замера: сетка по ширине, точка и её окрестность 0,6 вне многоугольников
+function svobodnyeTochki(u: Uroven, skolko: number): [number, number][] {
+  const vnutri = (t: readonly (readonly [number, number])[], x: number, y: number): boolean => {
+    let vn = false;
+    for (let i = 0, j = t.length - 1; i < t.length; j = i++) {
+      const [xi, yi] = t[i] as [number, number];
+      const [xj, yj] = t[j] as [number, number];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) vn = !vn;
+    }
+    return vn;
+  };
+  const zanyata = (x: number, y: number): boolean =>
+    u.poligony.some((p) =>
+      [
+        [0, 0],
+        [0.6, 0],
+        [-0.6, 0],
+        [0, 0.6],
+        [0, -0.6],
+      ].some(([dx, dy]) => vnutri(p.tochki, x + (dx as number), y + (dy as number))),
+    );
+  const res: [number, number][] = [];
+  for (const y of [1.2, 4, 7, 10])
+    for (let x = u.granicy.minX + 1.5; x < u.granicy.maxX - 1 && res.length < skolko; x += 1.8)
+      if (!zanyata(x, y)) res.push([x, y]);
+  return res;
+}
 const statisty: Telo[] = [];
+const STATIST = { ...PUSTOE, vyazkost: true }; // статист липнет там, где приземлился, и не скатывается в кучу
 
 if (komnata) {
   mir.dobavitOtrezok(-10, 0, 10, 0);
@@ -206,7 +234,14 @@ if (komnata) {
   zapustitUroven(tekushchiy);
 }
 
-if (perf) for (let i = 0; i < 24; i++) statisty.push(new Telo(mir, 3 + i * 0.7, 3 + (i % 4) * 1.2));
+// Замер: 24 статиста (400 точек) врозь по уровню, без ввода, чтобы мерить решатель, а не кучу тел.
+// Куча из 25 тел в игре не бывает (не больше шести контуров), а стоит она в 15 раз дороже (BRIEF, грабли).
+if (perf)
+  for (const [x, y] of svobodnyeTochki(tekushchiy, 24)) {
+    const s = new Telo(mir, x, y);
+    mir.otklyuchitKontaktTel(s.kontur); // статисты не сталкиваются: герой сгребал их в кучу, куча стоит в 15 раз дороже
+    statisty.push(s);
+  }
 
 const zvuk = new Zvuk();
 zvuk.vklyuchen = progress.nastroyki.zvuk;
@@ -292,10 +327,10 @@ async function start(): Promise<void> {
       prizrak?.shag();
       igra?.doShaga();
       telo.primenit(nam, igra?.korkaSredy ?? false);
-      for (const s of statisty) s.primenit(nam);
+      for (const s of statisty) s.primenit(STATIST);
       mir.shag();
       telo.posle(nam);
-      for (const s of statisty) s.posle(nam);
+      for (const s of statisty) s.posle(STATIST);
       igra?.takt(nam);
       for (const s of igra?.sobytiya ?? []) {
         if (s.tip === 'smert') {
