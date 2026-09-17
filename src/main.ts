@@ -9,6 +9,8 @@ import { Vvod } from './input/vvod';
 import type { Uroven } from './level/format';
 import { porogOchkov, sleduyushchiy, UROVNI, urovenOtkryt, urovenPoId } from './level/spisok';
 import { type ZagruzhennyyUroven, zagruzitUroven } from './level/zagruzka';
+import { Analitika, uchastok } from './meta/analitika';
+import { nazvanieUrovnya, t, vybratYazyk, type Yazyk } from './meta/lokalizaciya';
 import {
   HranilishcheBrauzera,
   sohranitProgress,
@@ -16,6 +18,7 @@ import {
   zapisatRezultat,
 } from './meta/sohranenie';
 import { Mir } from './physics/mir';
+import { vybratPloshchadku } from './platform/ploshchadka';
 import { Stsena } from './render/stsena';
 
 const params = new URLSearchParams(location.search);
@@ -24,6 +27,20 @@ const perf = params.get('perf') === '1';
 
 const hranilishche = new HranilishcheBrauzera();
 const progress = zagruzitProgress(hranilishche);
+const ploshchadka = vybratPloshchadku(params.get('ploshchadka'), location.hostname);
+let yazyk: Yazyk = vybratYazyk(navigator.language || 'ru');
+const analitika = new Analitika((s) => {
+  try {
+    localStorage.setItem('tuff-analitika', s);
+  } catch {
+    // без хранилища
+  }
+});
+let pauzaPloshchadki = false;
+ploshchadka.onPauza((p) => {
+  pauzaPloshchadki = p;
+});
+analitika.sobytie('session_start', { ploshchadka: ploshchadka.imya, yazyk });
 
 let mir = new Mir(MIR);
 let ur: ZagruzhennyyUroven | null = null;
@@ -45,6 +62,8 @@ function zapustitUroven(u: Uroven): void {
   ekran.classList.remove('pokazan');
   zapis = new Zapis();
   prizrak = null;
+  analitika.sobytie('level_start', { uroven: u.id });
+  ploshchadka.geympleyStart();
   if (u.rezhim === 'zherlo') {
     const luchshaya = progress.urovni[u.id]?.zapis;
     if (luchshaya && luchshaya.length) prizrak = new Prizrak(u, luchshaya);
@@ -62,6 +81,7 @@ const knopkaEshche = document.getElementById('knopka-eshche') as HTMLButtonEleme
 function pokazatKonec(): void {
   if (!igra || !ur) return;
   ekranPokazan = true;
+  ploshchadka.geympleyStop();
   const serdca = ur.sushchnosti.filter((s) => s.tip === 'serdce').map((s) => s.sobrana);
   const zherlo = tekushchiy.rezhim === 'zherlo';
   const bylo = progress.urovni[tekushchiy.id]?.luchsheeVremya ?? 0;
@@ -73,16 +93,31 @@ function pokazatKonec(): void {
     zapis: zherlo ? zapis.takty : undefined,
   });
   sohranitProgress(hranilishche, progress);
+  ploshchadka.sohranit(JSON.stringify(progress)).catch(() => undefined);
+  analitika.sobytie('level_complete', {
+    uroven: tekushchiy.id,
+    vremya: Math.round(igra.takty / 60),
+    smerti: igra.smerti,
+    ochki: igra.ochki,
+    zvezdy: rez.zvezdy,
+  });
+  if (zherlo) ploshchadka.rekord('zherlo1', igra.takty).catch(() => undefined);
   const sek = igra.takty / 60;
   const vremya = `${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`;
-  ekranZagolovok.textContent = `${tekushchiy.nazvanie}: пройден`;
+  ekranZagolovok.textContent = `${nazvanieUrovnya(yazyk, tekushchiy.id, tekushchiy.nazvanie)}: ${t(yazyk, 'proyden')}`;
   ekranZvezdy.textContent = '★'.repeat(rez.zvezdy) + '☆'.repeat(3 - rez.zvezdy);
   if (zherlo) {
-    const rekord = bylo === 0 || igra.takty <= bylo ? '  новый рекорд' : '';
-    ekranTekst.textContent = `время ${vremya}${rekord}  самое длинное падение ${igra.dlinneysheePadenie.toFixed(1)}`;
+    const rekord = bylo === 0 || igra.takty <= bylo ? `  ${t(yazyk, 'rekord')}` : '';
+    ekranTekst.textContent = `${t(yazyk, 'vremya')} ${vremya}${rekord}  ${t(yazyk, 'padenie')} ${igra.dlinneysheePadenie.toFixed(1)}`;
   } else {
-    ekranTekst.textContent = `время ${vremya}  очки ${igra.ochki}  сердца ${igra.serdca}/${serdca.length}  смерти ${igra.smerti}`;
+    ekranTekst.textContent = `${t(yazyk, 'vremya')} ${vremya}  ${t(yazyk, 'ochki')} ${igra.ochki}  ${t(yazyk, 'serdca')} ${igra.serdca}/${serdca.length}  ${t(yazyk, 'smerti')} ${igra.smerti}`;
   }
+  // реклама между уровнями: только здесь, симуляция стоит, звук глушится на время ролика
+  zvuk.ustanovitGromkost(0);
+  ploshchadka.reklama().finally(() => {
+    zvuk.ustanovitGromkost(zvuk.vklyuchen ? 0.6 : 0);
+    analitika.sobytie('ad_shown', { tip: 'mezhdu-urovnyami', uroven: tekushchiy.id });
+  });
   knopkaDalshe.style.display = sleduyushchiy(tekushchiy.id) ? '' : 'none';
   ekran.classList.add('pokazan');
 }
@@ -119,7 +154,7 @@ function pokazatMenyu(): void {
       u.rezhim === 'zherlo' && pr?.luchsheeVremya
         ? ` ${Math.floor(pr.luchsheeVremya / 3600)}:${String(Math.floor((pr.luchsheeVremya / 60) % 60)).padStart(2, '0')}`
         : '';
-    el.innerHTML = `<span>${u.id} ${u.nazvanie}${vremya}</span><span class="z">${otkryt ? '★'.repeat(z) + '☆'.repeat(3 - z) : `🔒 ${u.rezhim === 'zherlo' ? `${u.zvyozdDlyaOtkrytiya ?? 12}★` : ''}`}</span>`;
+    el.innerHTML = `<span>${u.id} ${nazvanieUrovnya(yazyk, u.id, u.nazvanie)}${vremya}</span><span class="z">${otkryt ? '★'.repeat(z) + '☆'.repeat(3 - z) : `🔒 ${u.rezhim === 'zherlo' ? `${u.zvyozdDlyaOtkrytiya ?? 12}★` : ''}`}</span>`;
     if (otkryt)
       el.addEventListener('click', () => {
         skrytMenyu();
@@ -129,10 +164,20 @@ function pokazatMenyu(): void {
   }
   menyu.classList.add('pokazan');
   menyuPokazano = true;
+  ploshchadka.geympleyStop();
+  if (igra && !igra.gotovo) {
+    telo.schitatCentr();
+    analitika.sobytie('level_quit', {
+      uroven: tekushchiy.id,
+      uchastok: uchastok(telo.cx, tekushchiy.granicy.maxX),
+      vremya: Math.round(igra.takty / 60),
+    });
+  }
 }
 function skrytMenyu(): void {
   menyu.classList.remove('pokazan');
   menyuPokazano = false;
+  ploshchadka.geympleyStart();
 }
 menyuKnopka.addEventListener('click', () => (menyuPokazano ? skrytMenyu() : pokazatMenyu()));
 menyuZakryt.addEventListener('click', skrytMenyu);
@@ -205,12 +250,31 @@ function risovatUi(): void {
 
 async function start(): Promise<void> {
   await stsena.init();
+  // площадка: SDK и язык; сохранение с площадки перекрывает локальное, если оно новее по числу уровней
+  try {
+    await ploshchadka.gotova();
+    yazyk = vybratYazyk(ploshchadka.yazyk());
+    const s = await ploshchadka.zagruzit();
+    if (s) {
+      const p = JSON.parse(s) as typeof progress;
+      if (Object.keys(p.urovni ?? {}).length >= Object.keys(progress.urovni).length)
+        Object.assign(progress, p);
+    }
+  } catch (e) {
+    analitika.sobytie('platform_error', { tekst: String(e) });
+  }
+  menyuKnopka.textContent = t(yazyk, 'urovni');
+  menyuZakryt.textContent = t(yazyk, 'igrat');
+  knopkaDalshe.textContent = t(yazyk, 'dalshe');
+  knopkaEshche.textContent = t(yazyk, 'eshche');
+  ploshchadka.igraGotova();
+  ploshchadka.geympleyStart();
   stsena.app.stage.addChild(ui);
   stsena.app.ticker.add(() => {
     const now = performance.now();
     nakoplen += Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (menyuPokazano || ekranPokazan) nakoplen = 0; // пауза: симуляция стоит
+    if (menyuPokazano || ekranPokazan || pauzaPloshchadki) nakoplen = 0; // пауза: симуляция стоит
     while (nakoplen >= MIR.shag) {
       vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
@@ -224,6 +288,17 @@ async function start(): Promise<void> {
       telo.posle(nam);
       for (const s of statisty) s.posle(nam);
       igra?.takt(nam);
+      for (const s of igra?.sobytiya ?? []) {
+        if (s.tip === 'smert') {
+          telo.schitatCentr();
+          analitika.sobytie('death', {
+            uroven: tekushchiy.id,
+            uchastok: uchastok(telo.cx, tekushchiy.granicy.maxX),
+            prichina: s.prichina,
+          });
+        } else if (s.tip === 'gorn')
+          analitika.sobytie('checkpoint', { uroven: tekushchiy.id, id: s.id });
+      }
       // скорость тела за такт для звука удара
       let sk = 0;
       for (let i = telo.ot; i < telo.ot + telo.n; i++)
@@ -260,7 +335,7 @@ async function start(): Promise<void> {
         ? `время ${(igra.takty / 60).toFixed(1)} с  высота ${igra.maksVysota.toFixed(1)}  падение ${igra.dlinneysheePadenie.toFixed(1)}`
         : `жар ${igra.zhar.toFixed(0)}  очки ${igra.ochki}  сердца ${igra.serdca}/3  смерти ${igra.smerti}${igra.gotovo ? '  УРОВЕНЬ ПРОЙДЕН' : ''}`
       : '';
-    hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\nWASD/стрелки  J Вязкость  K Расплав  L Корка  Пробел Выброс`;
+    hud.textContent = `fps ${fps.toFixed(0)}  такт ${taktMs.toFixed(2)} мс  точек ${mir.n}\nw ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}\n${sostoyanie}\n${t(yazyk, 'podskazka')}`;
   });
 }
 
