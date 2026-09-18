@@ -1,8 +1,11 @@
 // Точка входа: уровень 1-1 по умолчанию, ?komnata=1 тестовая комната, ?perf=1 замер.
 import { Graphics, Text } from 'pixi.js';
 import { Zvuk } from './audio/zvuk';
+import { KRIOSTAT } from './game/config/boss';
 import { MIR } from './game/config/telo';
+import { ZHAR } from './game/config/zhar';
 import { Igra } from './game/igra';
+import { Kriostat } from './game/kriostat';
 import { PUSTOE, Telo } from './game/telo';
 import { Prizrak, Zapis } from './game/zapis';
 import { type Knopka, Vvod } from './input/vvod';
@@ -91,12 +94,21 @@ function pokazatKonec(): void {
   const serdca = ur.sushchnosti.filter((s) => s.tip === 'serdce').map((s) => s.sobrana);
   const zherlo = tekushchiy.rezhim === 'zherlo';
   const bylo = progress.urovni[tekushchiy.id]?.luchsheeVremya ?? 0;
+  // третья звезда там, где есть цель по времени: ствол без длинного падения; погоня и босс с камнями
+  // и жаром не ниже половины, у босса вместо жара годится запасной путь
+  const tretya = zherlo
+    ? igra.dlinneysheePadenie < 3
+    : serdca.every(Boolean) &&
+      (igra.minZhar >= ZHAR.maks / 2 ||
+        (igra.boss instanceof Kriostat && igra.boss.treshchin >= KRIOSTAT.treshchinNaBak));
   const rez = zapisatRezultat(progress, tekushchiy.id, {
     takty: igra.takty,
     ochki: igra.ochki,
     serdca,
     porogOchkov: porogOchkov(tekushchiy),
     zapis: zherlo ? zapis.takty : undefined,
+    vremyaZvezdy: tekushchiy.vremyaZvezdy,
+    tretya,
   });
   sohranitProgress(hranilishche, progress);
   ploshchadka.sohranit(JSON.stringify(progress)).catch(() => undefined);
@@ -107,7 +119,10 @@ function pokazatKonec(): void {
     ochki: igra.ochki,
     zvezdy: rez.zvezdy,
   });
-  if (zherlo) ploshchadka.rekord('zherlo1', igra.takty).catch(() => undefined);
+  if (zherlo)
+    ploshchadka
+      .rekord(tekushchiy.id === 'zh-1' ? 'zherlo1' : tekushchiy.id, igra.takty)
+      .catch(() => undefined);
   const sek = igra.takty / 60;
   const vremya = `${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`;
   ekranZagolovok.textContent = `${nazvanieUrovnya(yazyk, tekushchiy.id, tekushchiy.nazvanie)}: ${t(yazyk, 'proyden')}`;

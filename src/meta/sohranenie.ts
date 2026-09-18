@@ -8,6 +8,7 @@ export interface ProgressUrovnya {
   serdca: boolean[]; // по id сердце-камней в порядке уровня
   zvezdy: 0 | 1 | 2 | 3;
   zapis?: number[]; // Жерло: ввод лучшей попытки по тактам
+  tretya?: boolean; // условие третьей звезды выполнено хоть раз (погоня, босс, ствол)
 }
 
 export interface Progress {
@@ -91,9 +92,17 @@ export function schitatZvezdy(
   porogOchkov: number,
   serdcaSobrano: number,
   serdcaVsego: number,
+  poVremeni?: { takty: number; cel: number; tretya: boolean },
 ): 0 | 1 | 2 | 3 {
   if (!proyden) return 0;
   let z: 0 | 1 | 2 | 3 = 1;
+  if (poVremeni) {
+    // погоня, босс, ствол: вторая звезда за время не хуже целевого, третья за условие уровня
+    // (камень и жар не ниже половины, или запасной путь, или подъём без длинного падения)
+    if (poVremeni.takty <= poVremeni.cel * 60) z = 2;
+    if (z === 2 && poVremeni.tretya) z = 3;
+    return z;
+  }
   if (ochki >= porogOchkov) z = 2;
   if (z === 2 && serdcaVsego > 0 && serdcaSobrano >= serdcaVsego) z = 3;
   return z;
@@ -103,7 +112,15 @@ export function schitatZvezdy(
 export function zapisatRezultat(
   p: Progress,
   id: string,
-  rez: { takty: number; ochki: number; serdca: boolean[]; porogOchkov: number; zapis?: number[] },
+  rez: {
+    takty: number;
+    ochki: number;
+    serdca: boolean[];
+    porogOchkov: number;
+    zapis?: number[];
+    vremyaZvezdy?: number;
+    tretya?: boolean;
+  },
 ): ProgressUrovnya {
   const bylo = p.urovni[id] ?? {
     proyden: false,
@@ -116,14 +133,19 @@ export function zapisatRezultat(
   const luchshieOchki = Math.max(bylo.luchshieOchki, rez.ochki);
   const luchsheeVremya =
     bylo.luchsheeVremya === 0 ? rez.takty : Math.min(bylo.luchsheeVremya, rez.takty);
+  const tretya = (rez.tretya ?? false) || (bylo.tretya ?? false);
   const zvezdy = schitatZvezdy(
     true,
     luchshieOchki,
     rez.porogOchkov,
     serdca.filter(Boolean).length,
     serdca.length,
+    rez.vremyaZvezdy !== undefined
+      ? { takty: luchsheeVremya, cel: rez.vremyaZvezdy, tretya }
+      : undefined,
   );
   const novoe: ProgressUrovnya = { proyden: true, luchsheeVremya, luchshieOchki, serdca, zvezdy };
+  if (rez.vremyaZvezdy !== undefined) novoe.tretya = tretya;
   // запись хранится только у лучшего времени
   if (rez.zapis && (bylo.luchsheeVremya === 0 || rez.takty <= bylo.luchsheeVremya))
     novoe.zapis = rez.zapis;

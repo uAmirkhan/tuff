@@ -78,7 +78,8 @@ function proyti(rezhim: Rezhim, maksTaktov: number) {
         break;
       case 'na-balku1':
         nam = { ...PUSTOE, dx: 1 };
-        if (y < 14.1 && x > 1.6 && Math.abs(vy) < 0.5) faza = rezhim === 'potok' ? 'v-potok' : 'k-pravoy';
+        if (y < 14.1 && x > 1.6 && Math.abs(vy) < 0.5)
+          faza = rezhim === 'potok' ? 'v-potok' : 'k-pravoy';
         if (y < 13) faza = 'k-levoy';
         break;
       case 'v-potok':
