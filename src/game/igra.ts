@@ -584,9 +584,18 @@ export class Igra {
     if (storozh) this.sobytiya.push({ tip: 'storozh', prichina: storozh });
   }
 
+  /**
+   * Переключить цель. Если на цель смотрит больше одного источника (две плиты на дверь),
+   * цель открыта только когда активны ВСЕ: это и есть кооп-ворота «нажаты обе».
+   * С одним источником поведение прежнее, поэтому старые уровни не меняются.
+   */
   private pereklyuchit(id: string, otkryt: boolean): void {
     const z = this.ur.sushchnosti.find((s) => s.id === id);
     if (!z) return;
+    const istochniki = this.ur.sushchnosti.filter(
+      (s) => (s.tip === 'plita' || s.tip === 'rychag') && s.cel === id,
+    );
+    if (istochniki.length > 1) otkryt = istochniki.every((s) => s.aktivna);
     if (z.tip === 'lava' || z.tip === 'ship' || z.tip === 'voda') {
       z.aktivna = otkryt;
       return;

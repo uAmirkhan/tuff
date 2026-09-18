@@ -6,6 +6,7 @@ import { MIR } from '../src/game/config/telo';
 import { Igra } from '../src/game/igra';
 import { type Namerenie, PUSTOE, Telo } from '../src/game/telo';
 import type { Obekt, Uroven } from '../src/level/format';
+import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
 
@@ -280,5 +281,46 @@ describe('кооп: среда и жар у каждого тела свои', (
     expect(zaryadGeroya).toBeGreaterThan(zaryadSputnika);
     expect(s.igra.korkaSredy).toBe(true);
     expect(s.igra.korkaSredyTela(s.b as Telo)).toBe(false);
+  });
+});
+
+describe('кооп: ворота «нажаты обе» и правило валидатора', () => {
+  // Две плиты на ОДНУ дверь. Шаг 6 больше замеренного минимума 2,5.
+  const VOROTA_I: Obekt[] = [
+    { tip: 'plita', id: 'p1', x: 12, y: 0, cel: 'd', fiksiruetsya: false },
+    { tip: 'plita', id: 'p2', x: 18, y: 0, cel: 'd', fiksiruetsya: false },
+    { tip: 'zaslonka', id: 'd', x: 24, y: 0, w: 0.4, h: 3 },
+    { tip: 'vyhod', id: 'v', x: 28, y: 0.5 },
+  ];
+
+  it('одна плита из двух дверь не открывает', () => {
+    const s = stsena(VOROTA_I, 12, 0.6, 3, 0.6);
+    for (let t = 0; t < 120; t++) s.shag();
+    expect(s.najdi('plita', 'p1')?.aktivna).toBe(true);
+    expect(s.najdi('zaslonka', 'd')?.aktivna).toBe(false);
+  });
+
+  it('обе нажаты — дверь открыта; один сошёл — закрылась', () => {
+    const s = stsena(VOROTA_I, 12, 0.6, 18, 0.6);
+    for (let t = 0; t < 120; t++) s.shag();
+    expect(s.najdi('zaslonka', 'd')?.aktivna).toBe(true);
+    // второй уходит с плиты
+    for (let t = 0; t < 240; t++) s.shag({}, { dx: 1 });
+    expect(s.najdi('plita', 'p2')?.aktivna).toBe(false);
+    expect(s.najdi('zaslonka', 'd')?.aktivna).toBe(false);
+  });
+
+  it('валидатор ловит защёлку по умолчанию и слишком близкие плиты', () => {
+    const plohoy = komnata([
+      { tip: 'plita', id: 'p1', x: 12, y: 0, cel: 'd' },
+      { tip: 'plita', id: 'p2', x: 14, y: 0, cel: 'd' },
+      { tip: 'zaslonka', id: 'd', x: 24, y: 0, w: 0.4, h: 3 },
+      { tip: 'vyhod', id: 'v', x: 28, y: 0.5 },
+    ]);
+    const oshibki = proveritUroven(plohoy);
+    expect(oshibki.some((o) => o.includes('fiksiruetsya'))).toBe(true);
+    expect(oshibki.some((o) => o.includes('одно тело держит обе'))).toBe(true);
+
+    expect(proveritUroven(komnata(VOROTA_I))).toEqual([]);
   });
 });
