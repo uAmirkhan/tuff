@@ -65,7 +65,7 @@ function stsena(obekty: Obekt[], ax: number, ay: number, bx?: number, by?: numbe
     mir.shag();
     a.posle(na2);
     b?.posle(nb2);
-    igra.takt(na2);
+    igra.takt(na2, b ? [nb2] : []);
     a.schitatCentr();
     b?.schitatCentr();
   };
@@ -199,5 +199,86 @@ describe('кооп: поток толкает оба тела', () => {
     const korka = stsena(ob, 3, 0.6, 12, 0.6);
     for (let t = 0; t < 180; t++) korka.shag({}, { korka: true });
     expect((korka.b as Telo).cx - 12).toBeLessThan(snos);
+  });
+});
+
+describe('кооп: среда и жар у каждого тела свои', () => {
+  const SHIPY: Obekt[] = [
+    { tip: 'ship', id: 'sh', x: 12, y: 0, w: 4, h: 2 },
+    { tip: 'vyhod', id: 'v', x: 27, y: 0.5 },
+  ];
+
+  it('спутник в шипах теряет свой жар, у героя жар цел', () => {
+    const s = stsena(SHIPY, 3, 0.6, 14, 0.6);
+    for (let t = 0; t < 60; t++) s.shag();
+    expect(s.igra.zhar).toBe(100);
+    const zhB = s.igra.zhizni[1]?.zhar as number;
+    expect(zhB).toBeLessThan(100);
+    expect(zhB).toBeGreaterThan(0);
+  });
+
+  it('вода надевает принудительную Корку тому, кто в ней, а не обоим', () => {
+    const ob: Obekt[] = [
+      { tip: 'voda', id: 'vd', x: 12, y: 0, w: 4, h: 2 },
+      { tip: 'vyhod', id: 'v', x: 27, y: 0.5 },
+    ];
+    const s = stsena(ob, 3, 0.6, 14, 0.6);
+    for (let t = 0; t < 30; t++) s.shag();
+    expect(s.igra.korkaSredy).toBe(false);
+    expect(s.igra.korkaSredyTela(s.b as Telo)).toBe(true);
+  });
+
+  it('лава лечит того, кто в ней', () => {
+    const ob: Obekt[] = [
+      { tip: 'ship', id: 'sh', x: 2, y: 0, w: 3, h: 2 },
+      { tip: 'lava', id: 'l', x: 12, y: 0, w: 4, h: 2 },
+      { tip: 'vyhod', id: 'v', x: 27, y: 0.5 },
+    ];
+    const s = stsena(ob, 3, 0.6, 14, 0.6);
+    for (let t = 0; t < 60; t++) s.shag();
+    expect(s.igra.zhar).toBeLessThan(100); // герой стоит в шипах
+    expect(s.igra.zhizni[1]?.zhar).toBe(100); // спутник в лаве остаётся полным
+  });
+
+  it('спутник умирает от шипов и возрождается на чекпоинте, герой жив', () => {
+    const s = stsena(SHIPY, 3, 0.6, 14, 0.6);
+    let smertey = 0;
+    for (let t = 0; t < 400; t++) {
+      s.shag();
+      for (const e of s.igra.sobytiya) if (e.tip === 'smert') smertey++;
+    }
+    expect(smertey).toBeGreaterThan(0);
+    expect(s.igra.zhar).toBe(100);
+    expect((s.b as Telo).cx).toBeLessThan(5); // вернулся к старту, а не остался в шипах на 14
+  });
+
+  it('спутник за границей уровня возрождается, а не роняет прохождение', () => {
+    const s = stsena([{ tip: 'vyhod', id: 'v', x: 27, y: 0.5 }], 3, 0.6, 14, 0.6);
+    // уносим спутника далеко вправо за границу
+    const b = s.b as Telo;
+    for (let i = b.ot; i < b.ot + b.n; i++) {
+      s.mir.x[i] = (s.mir.x[i] as number) + 60;
+      s.mir.px[i] = (s.mir.px[i] as number) + 60;
+    }
+    s.shag();
+    b.schitatCentr();
+    expect(b.cx).toBeLessThan(10); // вернулся на чекпоинт
+    expect(s.igra.gotovo).toBe(false);
+  });
+
+  it('иней считает хватку каждому телу отдельно', () => {
+    const ob: Obekt[] = [
+      { tip: 'iney', id: 'i', x: 10, y: 0, w: 10, h: 3, zaderzhka: 1 },
+      { tip: 'vyhod', id: 'v', x: 27, y: 0.5 },
+    ];
+    const s = stsena(ob, 12, 0.6, 16, 0.6);
+    // герой держит Вязкость и набирает заряд, спутник нет
+    for (let t = 0; t < 90; t++) s.shag({ vyazkost: true }, {});
+    const zh = s.igra.zhizni;
+    const zaryadGeroya = [...(zh[0]?.zaryadInya.values() ?? [])][0] ?? 0;
+    const zaryadSputnika = [...(zh[1]?.zaryadInya.values() ?? [])][0] ?? 0;
+    expect(zaryadGeroya).toBeGreaterThan(zaryadSputnika);
+    expect(s.igra.korkaSredy).toBe(true);
+    expect(s.igra.korkaSredyTela(s.b as Telo)).toBe(false);
   });
 });
