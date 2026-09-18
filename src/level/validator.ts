@@ -68,6 +68,35 @@ export function proveritUroven(u: Uroven): string[] {
     )
       oshibki.push(`${o.tip} ${o.id ?? '?'} за границами уровня`);
   }
+  // Кооп-ворота на плитах. Оба нарушения ниже НЕ дают ошибки при запуске: уровень грузится,
+  // выглядит задуманным и тихо проходится одним игроком. Числа из замеров 18.09
+  // (wiki 16-koop-dizayn, раздел 4.5): одно тело держит две плиты ближе 2,5.
+  const plity = u.obekty.filter((o) => o.tip === 'plita');
+  const poCeli = new Map<string, typeof plity>();
+  for (const p of plity) {
+    if (!p.cel) continue;
+    const spisok = poCeli.get(p.cel) ?? [];
+    spisok.push(p);
+    poCeli.set(p.cel, spisok);
+  }
+  for (const [cel, gruppa] of poCeli) {
+    if (gruppa.length < 2) continue;
+    for (const p of gruppa)
+      if (p.fiksiruetsya !== false)
+        oshibki.push(
+          `плита ${p.id ?? '?'} в воротах на ${cel}: нужен fiksiruetsya: false, иначе одиночка нажмёт обе по очереди`,
+        );
+    for (let i = 0; i < gruppa.length; i++)
+      for (let j = i + 1; j < gruppa.length; j++) {
+        const a = gruppa[i] as (typeof gruppa)[number];
+        const b = gruppa[j] as (typeof gruppa)[number];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < 2.5)
+          oshibki.push(
+            `плиты ${a.id ?? '?'} и ${b.id ?? '?'} в воротах на ${cel} стоят на ${d.toFixed(1)}: одно тело держит обе, нужно не меньше 2,5`,
+          );
+      }
+  }
   // чекпоинт перед каждым испытанием: ближайший горн левее или ниже начала испытания не дальше 12 единиц
   const gorny = u.obekty.filter((o) => o.tip === 'gorn');
   if (u.rezhim === 'zherlo' && gorny.length) oshibki.push('в Жерле не бывает горнов');
