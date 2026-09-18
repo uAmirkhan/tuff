@@ -18,7 +18,22 @@ import { UROVEN_PROBA } from './urovni/proba-elementov';
 import { UROVEN_STVOL_1 } from './urovni/stvol-1';
 import { UROVEN_ZH_1 } from './urovni/zherlo-1';
 
+// Кампания: ярус 1 «Криоблок» (семь уровней) и бонус «Ствол» (открывается звёздами яруса)
 export const UROVNI: Uroven[] = [
+  UROVEN_K1_1,
+  UROVEN_K1_2,
+  UROVEN_K1_3,
+  UROVEN_K1_4,
+  UROVEN_K1_5,
+  UROVEN_K1_6,
+  UROVEN_K1_7,
+  UROVEN_STVOL_1,
+];
+
+// Испытательные уровни: не в кампании, открываются по ?uroven=<id>. Старая проба мира 1 (лава)
+// остаётся стендом и заготовкой для яруса 5
+export const ISPYTATELNYE: Uroven[] = [
+  UROVEN_PROBA,
   UROVEN_1_1,
   UROVEN_1_2,
   UROVEN_1_3,
@@ -29,26 +44,16 @@ export const UROVNI: Uroven[] = [
   UROVEN_ZH_1,
 ];
 
-// Испытательные уровни: не в кампании, открываются по ?uroven=<id>
-export const ISPYTATELNYE: Uroven[] = [
-  UROVEN_PROBA,
-  UROVEN_K1_1,
-  UROVEN_K1_2,
-  UROVEN_K1_3,
-  UROVEN_K1_4,
-  UROVEN_K1_5,
-  UROVEN_K1_6,
-  UROVEN_K1_7,
-  UROVEN_STVOL_1,
-]; // k1-*: черновики яруса 1, в кампанию после сборки яруса
-
 export function urovenPoId(id: string): Uroven | undefined {
   return UROVNI.find((u) => u.id === id) ?? ISPYTATELNYE.find((u) => u.id === id);
 }
 
+// Следующий уровень кампании; бонусы (Жерло) не в цепочке, в них входят из меню по звёздам
 export function sleduyushchiy(id: string): Uroven | undefined {
   const i = UROVNI.findIndex((u) => u.id === id);
-  return i === -1 ? undefined : UROVNI[i + 1];
+  if (i === -1) return undefined;
+  const sl = UROVNI[i + 1];
+  return sl && sl.rezhim !== 'zherlo' ? sl : undefined;
 }
 
 // Сумма звёзд мира по прогрессу

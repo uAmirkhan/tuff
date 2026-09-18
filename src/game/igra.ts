@@ -35,6 +35,7 @@ export type Sobytie =
 
 export class Igra {
   zhar: number = ZHAR.maks;
+  minZhar: number = ZHAR.maks; // наименьший жар за уровень: звезда «без потери жара больше половины»
   ochki = 0;
   serdca = 0;
   takty = 0;
@@ -458,6 +459,7 @@ export class Igra {
     // Падение за границы уровня
     const gr = this.ur.dannye.granicy;
     if (cy < gr.minY - 2 || cx < gr.minX - 5 || cx > gr.maxX + 5) this.umeret('падение');
+    if (this.zhar < this.minZhar) this.minZhar = this.zhar;
     if (this.zhar <= 0) this.umeret(this.prichinaUrona);
     // сторожа тела: взрыв, выворачивание, самопересечение; событие в журнал и в события такта
     const storozh = this.telo.storozha();
