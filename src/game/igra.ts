@@ -528,7 +528,13 @@ export class Igra {
         this.boss.takt(g, this.telo.vKorke, vy, lava, 100 + this.takty);
       } else {
         // Криостат: обдув надевает Корку как иней (со следующего такта), хватка жжёт холодом
-        const r = this.boss.takt(g, cx, this.telo.vKorke, vy);
+        const r = this.boss.takt(
+          g,
+          cx,
+          this.telo.vKorke,
+          vy,
+          this.sputniki.map((t) => t.gabarity()),
+        );
         const zhG = this.zhizni[0] as Zhizn;
         if (r.moroz) zhG.korkaDo = Math.max(zhG.korkaDo, this.takty + 60);
         if (r.uron > 0) {
