@@ -85,3 +85,54 @@ export function proveritUroven(u: Uroven): string[] {
     oshibki.push('старт за границами');
   return oshibki;
 }
+
+// Проверка яруса целиком: требования из 13-plany-urovney.md, раздел 0 («Проверяемые требования
+// к каждому ярусу»), которые считаются по всем уровням тира сразу, а не по одному. Жерло-уровни
+// (бонусы) в подсчёт не входят: у них своя экономика. «Крылья» (30% площади вне пути) сюда не
+// входят — это отдельный скрипт по геометрии, не сущностный чек.
+export function proveritYarus(urovni: Uroven[]): string[] {
+  const oshibki: string[] = [];
+  const yarusnye = urovni.filter((u) => u.rezhim !== 'zherlo');
+  const uzly = yarusnye.reduce((n, u) => n + u.obekty.filter((o) => o.tip === 'uzel').length, 0);
+  if (uzly !== 1) oshibki.push(`узлов теплотрассы на ярусе ${uzly}, нужен один`);
+  const nomera = yarusnye.flatMap((u) =>
+    u.obekty.filter((o) => o.tip === 'panel').map((o) => o.nomer),
+  );
+  if (nomera.length !== 3) oshibki.push(`панелей на ярусе ${nomera.length}, нужно три`);
+  if (new Set(nomera).size !== nomera.length) oshibki.push('номера панелей повторяются на ярусе');
+  const soStvolom = yarusnye.filter((u) =>
+    u.obekty.some((o) => o.tip === 'okno' && o.vid === 'stvol'),
+  ).length;
+  if (soStvolom < 2) oshibki.push(`уровней с окном в ствол ${soStvolom}, нужно не меньше двух`);
+  const budushchee = yarusnye.reduce(
+    (n, u) => n + u.obekty.filter((o) => o.tip === 'okno' && o.vid === 'budushchee').length,
+    0,
+  );
+  if (budushchee < 3) oshibki.push(`окон в будущее на ярусе ${budushchee}, нужно не меньше трёх`);
+  const vstrechi = yarusnye.reduce(
+    (n, u) => n + u.obekty.filter((o) => o.tip === 'bak' && o.vid === 'polnyy').length,
+    0,
+  );
+  if (vstrechi < 1) oshibki.push('на ярусе нет немой встречи (бак vid polnyy)');
+  const kadry = yarusnye.reduce(
+    (n, u) => n + u.obekty.filter((o) => o.tip === 'panorama').length,
+    0,
+  );
+  if (kadry < 1) oshibki.push('на ярусе нет кадра масштаба (сущность panorama)');
+  // по уровню: обычный уровень — три сердце-камня и один гэг; погоня — один камень; босс — ноль
+  // камней; погоня и босс отличаются сущностью kotyol/kriostat. Жерло сюда не попадает (yarusnye)
+  for (const u of yarusnye) {
+    const serdca = u.obekty.filter((o) => o.tip === 'serdce').length;
+    const gag = u.obekty.filter((o) => o.tip === 'gag').length;
+    const boss = u.obekty.some((o) => o.tip === 'kotyol' || o.tip === 'kriostat');
+    if (u.vremyaZvezdy === undefined) {
+      if (serdca !== 3) oshibki.push(`${u.id}: сердце-камней ${serdca}, нужно три`);
+      if (gag !== 1) oshibki.push(`${u.id}: гэгов ${gag}, нужен один`);
+    } else if (boss) {
+      if (serdca !== 0) oshibki.push(`${u.id}: на боссе сердце-камней ${serdca}, нужно ноль`);
+    } else if (serdca !== 1) {
+      oshibki.push(`${u.id}: на погоне сердце-камней ${serdca}, нужен один`);
+    }
+  }
+  return oshibki;
+}

@@ -2,7 +2,7 @@
 // и условию третьей звезды там, где нет сердце-камней на очки.
 import { describe, expect, it } from 'vitest';
 import { ISPYTATELNYE, sleduyushchiy, UROVNI, urovenOtkryt, zvyozdMira } from '../src/level/spisok';
-import { proveritUroven } from '../src/level/validator';
+import { proveritUroven, proveritYarus } from '../src/level/validator';
 import { schitatZvezdy } from '../src/meta/sohranenie';
 
 describe('кампания яруса 1', () => {
@@ -20,6 +20,17 @@ describe('кампания яруса 1', () => {
     for (const u of [...UROVNI, ...ISPYTATELNYE]) expect(proveritUroven(u), u.id).toEqual([]);
     const ids = new Set([...UROVNI, ...ISPYTATELNYE].map((u) => u.id));
     expect(ids.size).toBe(UROVNI.length + ISPYTATELNYE.length);
+  });
+
+  it('ярус целиком проходит сводные требования 13-plany-urovney §0', () => {
+    expect(proveritYarus(UROVNI)).toEqual([]);
+  });
+
+  it('proveritYarus ловит нехватку узла, панелей, окон в ствол и в будущее', () => {
+    const bezUzla = UROVNI.filter((u) => u.id !== 'k1-5');
+    const oshibki = proveritYarus(bezUzla);
+    expect(oshibki).toContain('узлов теплотрассы на ярусе 0, нужен один');
+    expect(oshibki).toContain('панелей на ярусе 2, нужно три');
   });
 
   it('«дальше» идёт по цепочке и не ведёт в бонус, бонус открывается 12 звёздами', () => {
