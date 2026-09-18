@@ -343,9 +343,13 @@ export class Mir {
     return i;
   }
 
-  // Контур без контакта с другими телами (статисты замера): только уровень
+  // Контур без контакта с другими телами (статисты замера, слитая пара): только уровень
   otklyuchitKontaktTel(kontur: number): void {
     this.cKontakt[kontur] = 0;
+  }
+
+  vklyuchitKontaktTel(kontur: number): void {
+    this.cKontakt[kontur] = 1;
   }
 
   ploshchadKontura(ot: number, n: number): number {

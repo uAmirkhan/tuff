@@ -5,6 +5,7 @@ import { TroynoyKotyol } from './boss';
 import { MIR } from './config/telo';
 import { BOY, SEMEYSTVA, VODA_ZASTYVANIE, VRAGI } from './config/vragi';
 import { Kriostat } from './kriostat';
+import { Sliyanie } from './sliyanie';
 
 const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
@@ -114,10 +115,27 @@ export class Igra {
     };
   }
 
+  /** Слияние героя с первым спутником. Создаётся вместе со спутником, живёт весь уровень. */
+  sliyanie: Sliyanie | null = null;
+
   dobavitSputnika(t: Telo): void {
     if (t === this.telo || this.sputniki.includes(t)) return;
     this.sputniki.push(t);
     this.zhizni.push(Igra.novayaZhizn(t));
+    if (!this.sliyanie) this.sliyanie = new Sliyanie(this.mir, this.telo, t);
+  }
+
+  /** Слить пару, если тела касаются. Возвращает, получилось ли. */
+  slit(): boolean {
+    return this.sliyanie?.slit() ?? false;
+  }
+
+  razdelit(): void {
+    this.sliyanie?.razdelit();
+  }
+
+  get slito(): boolean {
+    return this.sliyanie?.aktivno ?? false;
   }
 
   /** Принудительная Корка среды для конкретного тела: вода и иней действуют на каждого своего. */
@@ -588,6 +606,7 @@ export class Igra {
       this.umeret(prichina);
       return;
     }
+    this.razdelit();
     this.smerti++;
     zh.zhar = ZHAR.maks;
     zh.korkaDo = 0;
@@ -600,6 +619,7 @@ export class Igra {
 
   umeret(prichina: string): void {
     const zhG = this.zhizni[0] as Zhizn;
+    this.razdelit();
     this.smerti++;
     this.sobytiya.push({ tip: 'smert', prichina });
     zhG.zhar = ZHAR.maks;
