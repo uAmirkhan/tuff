@@ -208,3 +208,41 @@ describe('слияние: цена и выгода', () => {
     expect(slomal(para, true)).toBe(true);
   });
 });
+
+describe('слияние: кто везёт слитую пару', () => {
+  // Замер 18.09 (scripts/koop-passazhir-zamer.ts). Числа зафиксированы тестом, потому что
+  // на них держится вывод: слияние НЕ лечит пассажира, оно требует согласия, а не участия.
+  function put(na: Partial<Namerenie>, nb: Partial<Namerenie>, slivat: boolean): number {
+    const s = stsena(uroven(POL), 6, 0.6, 6.9, 0.6);
+    for (let t = 0; t < 30; t++) s.shag();
+    if (slivat) expect(s.igra.slit()).toBe(true);
+    s.a.schitatCentr();
+    s.b.schitatCentr();
+    const x0 = (s.a.cx + s.b.cx) / 2;
+    for (let t = 0; t < 420; t++) s.shag(na, nb);
+    return (s.a.cx + s.b.cx) / 2 - x0;
+  }
+
+  it('слитую пару один игрок везёт так же быстро, как двое', () => {
+    const oba = put({ dx: 1 }, { dx: 1 }, true);
+    const odin = put({ dx: 1 }, {}, true);
+    expect(oba).toBeGreaterThan(15); // комната короче замерочной, важны отношения, не путь
+    // если это отношение когда-нибудь упадёт заметно ниже единицы, слияние начало требовать
+    // усилий обоих, и раздел «пассажир» в вики надо переписывать
+    expect(odin / oba).toBeGreaterThan(0.9);
+  });
+
+  it('встречный ввод замораживает слитую пару: это вектор для гриферства', () => {
+    const oba = put({ dx: 1 }, { dx: 1 }, true);
+    const vrazrez = put({ dx: 1 }, { dx: -1 }, true);
+    expect(vrazrez / oba).toBeLessThan(0.05);
+  });
+
+  it('неслитые тела так не залипают: активный протаскивает пассивного вдвое медленнее', () => {
+    const oba = put({ dx: 1 }, { dx: 1 }, false);
+    const odin = put({ dx: 1 }, {}, false);
+    const vrazrez = put({ dx: 1 }, { dx: -1 }, false);
+    expect(odin / oba).toBeLessThan(0.7);
+    expect(vrazrez / oba).toBeGreaterThan(0.3);
+  });
+});
