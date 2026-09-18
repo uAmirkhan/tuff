@@ -47,6 +47,9 @@ export class Igra {
   korkaSredy = false;
   private korkaDo = 0;
 
+  // Тела второго игрока. Пусто в соло, и тогда всё ниже ведёт себя ровно как раньше.
+  readonly sputniki: Telo[] = [];
+
   readonly vragi: Vrag[] = [];
   boss: TroynoyKotyol | Kriostat | null = null;
   // Жерло: высота и самое длинное падение
@@ -75,6 +78,15 @@ export class Igra {
   }
 
   // Вызывать до mir.shag(): ИИ врагов
+  dobavitSputnika(t: Telo): void {
+    if (t !== this.telo && !this.sputniki.includes(t)) this.sputniki.push(t);
+  }
+
+  /** Герой и спутники одним списком: всё, что считается «телом игрока». */
+  private tela(): Telo[] {
+    return this.sputniki.length ? [this.telo, ...this.sputniki] : [this.telo];
+  }
+
   doShaga(): void {
     if (this.gotovo) return;
     this.telo.schitatCentr();
@@ -128,6 +140,11 @@ export class Igra {
         const sost = this.telo.sostoyanie;
         const mn = sost === 'rasplav' ? POTOK.rasplav : sost === 'korka' ? POTOK.korka : 1;
         this.tolknutChasticy(z, this.telo.ot, this.telo.n, mn);
+        for (const t of this.sputniki) {
+          const st = t.sostoyanie;
+          const mt = st === 'rasplav' ? POTOK.rasplav : st === 'korka' ? POTOK.korka : 1;
+          this.tolknutChasticy(z, t.ot, t.n, mt);
+        }
         for (const s of this.ur.sushchnosti)
           if (s.chasticy.length)
             this.tolknutChasticy(z, s.chasticy[0] as number, 4, POTOK.konteyner);
@@ -249,15 +266,25 @@ export class Igra {
       this.korkaDo = this.takty + ZHAR.korkaPosleVody;
     }
     this.korkaSredy = this.takty < this.korkaDo;
-    // Собираемое, горны, выход: по расстоянию до центра
+    // Собираемое, горны, выход: по расстоянию до центра.
+    // В кооперативе собирает и зажигает ближний из двоих, а выход требует, чтобы дошли оба.
+    // В соло спутников нет, и все три расстояния совпадают с расстоянием до героя.
     for (const s of this.ur.sushchnosti) {
       const d = Math.hypot(s.x - cx, s.y - cy);
+      let dBlizh = d,
+        dDaln = d;
+      for (const t of this.sputniki) {
+        t.schitatCentr();
+        const dt = Math.hypot(s.x - t.cx, s.y - t.cy);
+        if (dt < dBlizh) dBlizh = dt;
+        if (dt > dDaln) dDaln = dt;
+      }
       switch (s.tip) {
         case 'zharkamen':
         case 'zharkamenSredniy':
         case 'serdce':
         case 'ugolek':
-          if (!s.sobrana && d < ZHAR.radiusSbora) {
+          if (!s.sobrana && dBlizh < ZHAR.radiusSbora) {
             s.sobrana = true;
             const o = ZHAR.ochki[s.tip];
             this.ochki += o;
@@ -267,13 +294,13 @@ export class Igra {
           }
           break;
         case 'panel':
-          if (!s.sobrana && d < ZHAR.radiusSbora) {
+          if (!s.sobrana && dBlizh < ZHAR.radiusSbora) {
             s.sobrana = true;
             this.sobytiya.push({ tip: 'panel', nomer: s.nomer });
           }
           break;
         case 'ruda':
-          if (!s.sobrana && d < ZHAR.radiusSbora) {
+          if (!s.sobrana && dBlizh < ZHAR.radiusSbora) {
             s.sobrana = true;
             this.sobytiya.push({ tip: 'ruda', id: s.id });
           }
@@ -291,10 +318,10 @@ export class Igra {
           break;
         case 'bak':
           // полный бак вспыхивает, когда герой рядом: немая встреча
-          if (s.vid === 'polnyy') s.aktivna = d < UZEL.radiusVstrechi;
+          if (s.vid === 'polnyy') s.aktivna = dBlizh < UZEL.radiusVstrechi;
           break;
         case 'gorn':
-          if (!s.aktivna && d < ZHAR.radiusGorna) {
+          if (!s.aktivna && dBlizh < ZHAR.radiusGorna) {
             for (const g2 of this.ur.sushchnosti) if (g2.tip === 'gorn') g2.aktivna = false;
             s.aktivna = true;
             this.chekpoint = [s.x, s.y + 0.6];
@@ -303,7 +330,7 @@ export class Igra {
           break;
         case 'vyhod':
           if (this.ur.dannye.vyhodPosleBossa && this.boss && !this.boss.pobezhdyon) break;
-          if (d < ZHAR.radiusVyhoda) {
+          if (dDaln < ZHAR.radiusVyhoda) {
             this.gotovo = true;
             this.sobytiya.push({
               tip: 'vyhod',
@@ -314,10 +341,17 @@ export class Igra {
           }
           break;
         case 'plita': {
-          const nazhata =
-            g.maxX > s.x - 0.5 && g.minX < s.x + 0.5 && g.minY < s.y + 0.3 && g.maxY > s.y;
-          const godna = nazhata && (!s.nuzhnaKorka || this.telo.vKorke);
           if (s.fiksiruetsya && s.aktivna) break; // зафиксирована: не отпускается
+          let godna = false;
+          for (const t of this.tela()) {
+            const gt = t === this.telo ? g : t.gabarity();
+            const nazhata =
+              gt.maxX > s.x - 0.5 && gt.minX < s.x + 0.5 && gt.minY < s.y + 0.3 && gt.maxY > s.y;
+            if (nazhata && (!s.nuzhnaKorka || t.vKorke)) {
+              godna = true;
+              break;
+            }
+          }
           if (godna !== s.aktivna) {
             s.aktivna = godna;
             this.pereklyuchit(s.cel, godna);
@@ -325,7 +359,7 @@ export class Igra {
           break;
         }
         case 'rychag':
-          if (!s.aktivna && d < 0.8) {
+          if (!s.aktivna && dBlizh < 0.8) {
             s.aktivna = true;
             this.pereklyuchit(s.cel, true);
           }
