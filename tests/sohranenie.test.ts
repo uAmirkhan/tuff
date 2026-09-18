@@ -46,4 +46,53 @@ describe('сохранение прогресса', () => {
     expect(schitatZvezdy(true, 10, 10, 2, 3)).toBe(2);
     expect(schitatZvezdy(true, 10, 10, 3, 3)).toBe(3);
   });
+
+  it('погоня и босс: звёзды по времени, tretya копится между попытками (не сбрасывается худшей)', () => {
+    const h = new HranilishchePamyati();
+    const p = zagruzitProgress(h);
+    // первая попытка: медленнее цели (60 с), условие третьей звезды не выполнено — одна звезда
+    const r1 = zapisatRezultat(p, 'k1-6', {
+      takty: 61 * 60,
+      ochki: 0,
+      serdca: [],
+      porogOchkov: 0,
+      vremyaZvezdy: 60,
+      tretya: false,
+    });
+    expect(r1.zvezdy).toBe(1);
+    expect(r1.luchsheeVremya).toBe(61 * 60);
+    // вторая попытка: уложился во время, но условие третьей всё ещё не выполнено — две звезды
+    const r2 = zapisatRezultat(p, 'k1-6', {
+      takty: 50 * 60,
+      ochki: 0,
+      serdca: [],
+      porogOchkov: 0,
+      vremyaZvezdy: 60,
+      tretya: false,
+    });
+    expect(r2.zvezdy).toBe(2);
+    expect(r2.luchsheeVremya).toBe(50 * 60); // лучшее время улучшилось
+    // третья попытка: время хуже лучшего (не обновляет рекорд), но условие третьей звезды выполнено —
+    // засчитывается насовсем: рекорд времени остаётся 50 с (уложился), звёзды поднимаются до трёх
+    const r3 = zapisatRezultat(p, 'k1-6', {
+      takty: 70 * 60,
+      ochki: 0,
+      serdca: [],
+      porogOchkov: 0,
+      vremyaZvezdy: 60,
+      tretya: true,
+    });
+    expect(r3.luchsheeVremya).toBe(50 * 60); // рекорд не испортился худшей попыткой
+    expect(r3.zvezdy).toBe(3);
+    // четвёртая попытка без третьей звезды на этот раз: флаг не сбрасывается, три звезды остаются
+    const r4 = zapisatRezultat(p, 'k1-6', {
+      takty: 55 * 60,
+      ochki: 0,
+      serdca: [],
+      porogOchkov: 0,
+      vremyaZvezdy: 60,
+      tretya: false,
+    });
+    expect(r4.zvezdy).toBe(3);
+  });
 });
