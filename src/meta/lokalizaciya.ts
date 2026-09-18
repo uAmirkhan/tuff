@@ -22,6 +22,8 @@ const STROKI = {
     mir1: 'Ярус 1: Криоблок',
     zakryt: 'закрыт',
     podskazka: 'WASD/стрелки  J Вязкость  K Расплав  L Корка  Пробел Выброс',
+    podskazkaKoop:
+      'Первый WASD  J K L Пробел  F слияние    Второй стрелки  , . / ПравыйShift  P слияние',
     zagruzka: 'Загрузка',
     '1-1': 'Пробуждение',
     '1-2': 'Тонкий пол',
@@ -60,6 +62,7 @@ const STROKI = {
     mir1: 'Tier 1: Cryoblock',
     zakryt: 'locked',
     podskazka: 'WASD/arrows  J Grip  K Melt  L Crust  Space Burst',
+    podskazkaKoop: 'First WASD  J K L Space  F merge    Second arrows  , . / RightShift  P merge',
     zagruzka: 'Loading',
     '1-1': 'Awakening',
     '1-2': 'Thin Floor',

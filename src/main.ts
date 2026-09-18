@@ -54,6 +54,11 @@ analitika.sobytie('session_start', { ploshchadka: ploshchadka.imya, yazyk });
 let mir = new Mir(MIR);
 let ur: ZagruzhennyyUroven | null = null;
 let telo: Telo;
+// Кооп включается адресом ?koop=1. Это заглушка до меню: игровая модель на двоих уже есть,
+// а как её выбирать игроку — решается вместе с дизайном.
+const koop = params.get('koop') === '1';
+let telo2: Telo | null = null;
+let slitiePodderzhano = false;
 let igra: Igra | null = null;
 let tekushchiy: Uroven = urovenPoId(params.get('uroven') ?? '') ?? (UROVNI[0] as Uroven);
 let ekranPokazan = false;
@@ -66,6 +71,12 @@ function zapustitUroven(u: Uroven): void {
   ur = zagruzitUroven(mir, u);
   telo = new Telo(mir, u.start[0], u.start[1]);
   igra = new Igra(mir, telo, ur);
+  telo2 = null;
+  slitiePodderzhano = false;
+  if (koop) {
+    telo2 = new Telo(mir, u.start[0] + 1.2, u.start[1]);
+    igra.dobavitSputnika(telo2);
+  }
   statisty.length = 0;
   ekranPokazan = false;
   ekran.classList.remove('pokazan');
@@ -308,6 +319,8 @@ window.addEventListener('pointerdown', razbuditZvuk, { once: true });
 window.addEventListener('keydown', razbuditZvuk, { once: true });
 
 const vvod = new Vvod(document.body);
+vvod.koop = koop;
+
 vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
 const stsena = new Stsena();
 const hud = document.getElementById('hud') as HTMLDivElement;
@@ -458,16 +471,26 @@ async function start(): Promise<void> {
     while (nakoplen >= MIR.shag) {
       vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
+      const nam2 = telo2 ? vvod.sobratVtorogo() : null;
       const t0 = performance.now();
       if (igra && !igra.gotovo && tekushchiy.rezhim === 'zherlo') zapis.dobavit(nam);
       prizrak?.shag();
       igra?.doShaga();
+      // Слияние: держат оба. Отпустил любой — разошлись.
+      if (igra && telo2) {
+        const hotyat = vvod.sliyanieNazhato(0) && vvod.sliyanieNazhato(1);
+        if (hotyat && !slitiePodderzhano) igra.slit();
+        else if (!hotyat && slitiePodderzhano) igra.razdelit();
+        slitiePodderzhano = hotyat;
+      }
       telo.primenit(nam, igra?.korkaSredy ?? false);
+      if (telo2 && nam2) telo2.primenit(nam2, igra?.korkaSredyTela(telo2) ?? false);
       for (const s of statisty) s.primenit(STATIST);
       mir.shag();
       telo.posle(nam);
+      if (telo2 && nam2) telo2.posle(nam2);
       for (const s of statisty) s.posle(STATIST);
-      igra?.takt(nam);
+      igra?.takt(nam, nam2 ? [nam2] : []);
       for (const s of igra?.sobytiya ?? []) {
         if (s.tip === 'smert') {
           telo.schitatCentr();
@@ -508,10 +531,12 @@ async function start(): Promise<void> {
       nakoplen -= MIR.shag;
     }
     telo.schitatCentr();
-    stsena.sledit(telo.cx, telo.cy, ur?.dannye.granicy ?? null);
+    telo2?.schitatCentr();
+    const telaIgrokov = telo2 ? [telo, telo2] : [telo];
+    stsena.sleditZaTelami(telaIgrokov, ur?.dannye.granicy ?? null);
     stsena.risovat(
       mir,
-      [telo, ...statisty],
+      [...telaIgrokov, ...statisty],
       nakoplen / MIR.shag,
       ur,
       igra?.vragi ?? [],
@@ -575,7 +600,7 @@ async function start(): Promise<void> {
           ? `w ${g.w.toFixed(2)} h ${g.h.toFixed(2)}  промахи ${vvod.promahi}/${vvod.nazhatiy}`
           : '',
         sostoyanie,
-        estKasanie ? '' : t(yazyk, 'podskazka'),
+        estKasanie ? '' : t(yazyk, koop ? 'podskazkaKoop' : 'podskazka'),
       ]
         .filter(Boolean)
         .join('\n');
@@ -587,6 +612,12 @@ async function start(): Promise<void> {
       nam: { ...vvod.nam },
       sost: telo.sostoyanie,
       tach: vvod.tachAktiven,
+      // кооп
+      koop,
+      tela: (telo2 ? [telo, telo2] : [telo]).map((t) => ({ x: t.cx, y: t.cy, sost: t.sostoyanie })),
+      rasstoyanie: telo2 ? Math.hypot(telo.cx - telo2.cx, telo.cy - telo2.cy) : 0,
+      slito: igra?.slito ?? false,
+      svyazey: igra?.sliyanie?.svyazey ?? 0,
     };
   });
 }
