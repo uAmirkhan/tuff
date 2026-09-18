@@ -4,6 +4,8 @@ export type Yazyk = 'ru' | 'en';
 const STROKI = {
   ru: {
     urovni: 'Уровни',
+    zhurnal: 'Журнал',
+    naydeno: 'Найдено',
     igrat: 'Играть',
     dalshe: 'Дальше',
     eshche: 'Ещё раз',
@@ -40,6 +42,8 @@ const STROKI = {
   },
   en: {
     urovni: 'Levels',
+    zhurnal: 'Journal',
+    naydeno: 'Found',
     igrat: 'Play',
     dalshe: 'Next',
     eshche: 'Retry',

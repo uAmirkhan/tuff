@@ -202,8 +202,45 @@ function skrytMenyu(): void {
 }
 menyuKnopka.addEventListener('click', () => (menyuPokazano ? skrytMenyu() : pokazatMenyu()));
 menyuZakryt.addEventListener('click', skrytMenyu);
+
+// Журнал: сетка 15 панелей строителей (3 на ярус, 5 ярусов), найденные из progress.paneli
+// подсвечены номером. Содержание панелей (хронология комплекса) сюжетом ещё не решено, поэтому
+// показывается только факт находки, без текста (13-plany-urovney.md §0, 10-syuzhetnaya-bibliya §9).
+const VSEGO_PANELEY = 15;
+const zhurnal = document.getElementById('zhurnal') as HTMLDivElement;
+const zhurnalKnopka = document.getElementById('zhurnal-knopka') as HTMLButtonElement;
+const zhurnalZakryt = document.getElementById('zhurnal-zakryt') as HTMLButtonElement;
+const zhurnalSchyot = document.getElementById('zhurnal-schyot') as HTMLDivElement;
+const zhurnalSetka = document.getElementById('zhurnal-setka') as HTMLDivElement;
+let zhurnalPokazan = false;
+
+function pokazatZhurnal(): void {
+  zhurnalSchyot.textContent = `${t(yazyk, 'naydeno')}: ${progress.paneli.length}/${VSEGO_PANELEY}`;
+  zhurnalSetka.replaceChildren();
+  for (let n = 1; n <= VSEGO_PANELEY; n++) {
+    const naydena = progress.paneli.includes(n);
+    const el = document.createElement('div');
+    el.className = `panel${naydena ? ' naydena' : ''}`;
+    el.textContent = naydena ? String(n) : '?';
+    zhurnalSetka.appendChild(el);
+  }
+  zhurnal.classList.add('pokazan');
+  zhurnalPokazan = true;
+  ploshchadka.geympleyStop();
+}
+function skrytZhurnal(): void {
+  zhurnal.classList.remove('pokazan');
+  zhurnalPokazan = false;
+  ploshchadka.geympleyStart();
+}
+zhurnalKnopka.addEventListener('click', () => (zhurnalPokazan ? skrytZhurnal() : pokazatZhurnal()));
+zhurnalZakryt.addEventListener('click', skrytZhurnal);
+
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Escape') menyuPokazano ? skrytMenyu() : pokazatMenyu();
+  if (e.code !== 'Escape') return;
+  if (zhurnalPokazan) skrytZhurnal();
+  else if (menyuPokazano) skrytMenyu();
+  else pokazatMenyu();
 });
 
 // Свободные точки уровня для статистов замера: сетка по ширине, точка и её окрестность 0,6 вне многоугольников
@@ -402,7 +439,10 @@ async function start(): Promise<void> {
     analitika.sobytie('platform_error', { tekst: String(e) });
   }
   menyuKnopka.textContent = t(yazyk, 'urovni');
-  if (chisto) menyuKnopka.style.display = 'none';
+  if (chisto) {
+    menyuKnopka.style.display = 'none';
+    zhurnalKnopka.style.display = 'none';
+  }
   (document.getElementById('menyu-zagolovok') as HTMLElement).textContent = t(yazyk, 'mir1');
   menyuZakryt.textContent = t(yazyk, 'igrat');
   knopkaDalshe.textContent = t(yazyk, 'dalshe');

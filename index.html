@@ -35,12 +35,23 @@
       #menyu .uroven.zakryt { opacity: 0.45; cursor: default; }
       #menyu .uroven .z { color: #ffd23f; letter-spacing: 3px; }
       #menyu-knopka { position: fixed; right: 10px; top: 8px; font: 14px system-ui, sans-serif; padding: 6px 12px; border-radius: 8px; border: 0; background: rgba(255, 140, 58, 0.85); color: #2a1c17; }
+      #zhurnal-knopka { position: fixed; right: 96px; top: 8px; font: 14px system-ui, sans-serif; padding: 6px 12px; border-radius: 8px; border: 0; background: rgba(139, 148, 166, 0.85); color: #2a1c17; }
+      #zhurnal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(20, 12, 10, 0.85); color: #fff1d6; font: 16px system-ui, sans-serif; overflow: auto; }
+      #zhurnal.pokazan { display: flex; }
+      #zhurnal .karta { background: #2a1c17; border: 2px solid #8b94a6; border-radius: 14px; padding: 18px 22px; min-width: 280px; max-width: 92vw; box-sizing: border-box; text-align: center; }
+      #zhurnal h2 { margin: 0 0 4px; font-size: 22px; }
+      #zhurnal .schyot { color: #cfae8a; margin-bottom: 12px; font-size: 14px; }
+      #zhurnal-setka { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+      #zhurnal .panel { aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: #3b2a24; color: #6b5a4a; }
+      #zhurnal .panel.naydena { background: #ff8c3a; color: #2a1c17; font-weight: bold; }
     </style>
   </head>
   <body>
     <div id="hud"></div>
     <button id="menyu-knopka">Уровни</button>
+    <button id="zhurnal-knopka">Журнал</button>
     <div id="menyu"><div class="karta"><h2 id="menyu-zagolovok">Ядро</h2><div id="menyu-spisok"></div><div style="text-align:center;margin-top:8px"><button id="menyu-zakryt" class="vtor">Играть</button></div></div></div>
+    <div id="zhurnal"><div class="karta"><h2 id="zhurnal-zagolovok">Журнал</h2><div class="schyot" id="zhurnal-schyot"></div><div id="zhurnal-setka"></div><button id="zhurnal-zakryt" class="vtor">Играть</button></div></div>
     <div id="ekran"><div class="karta"><h2 id="ekran-zagolovok"></h2><div class="zvezdy" id="ekran-zvezdy"></div><div id="ekran-tekst"></div><div><button id="knopka-dalshe">Дальше</button><button id="knopka-eshche" class="vtor">Ещё раз</button></div></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
