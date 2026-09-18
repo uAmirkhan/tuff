@@ -8,6 +8,7 @@ import type { Uroven } from '../level/format';
 import type { Sushchnost, ZagruzhennyyUroven } from '../level/zagruzka';
 import type { Mir } from '../physics/mir';
 import { Fon } from './fon';
+import { celKamery } from './kamera';
 
 const TSVET_MATERIALA: Record<string, number> = {
   bazalt: 0x4a3a34,
@@ -24,6 +25,8 @@ export class Stsena {
   private statikaKlyuch = ''; // уровень и набор сломанных, для которых построен слой
   readonly g = new Graphics();
   masshtab = 60; // пикселей на единицу
+  masshtabMaks = 60; // обычная игра
+  masshtabMin = 26; // полное отдаление в кооперативе, дальше экран делится
   readonly pokazannye = new Set<string>(); // способности, которые игрок уже применил
   readonly znachki: { x: number; y: number; tekst: string }[] = [];
   kamX = 0;
@@ -37,6 +40,8 @@ export class Stsena {
     this.app.stage.addChild(this.kray);
     this.app.stage.addChild(this.g);
     this.masshtab = Math.max(40, Math.min(70, this.app.screen.height / 9));
+    this.masshtabMaks = this.masshtab;
+    this.masshtabMin = this.masshtab * 0.45;
   }
 
   private ekX(x: number): number {
@@ -48,8 +53,22 @@ export class Stsena {
 
   // Камера: следит за центром с опережением, не выходит за границы уровня
   sledit(cx: number, cy: number, gr: Uroven['granicy'] | null): void {
-    const celX = cx;
-    const celY = cy + 1;
+    this.sleditZaTelami([{ cx, cy }], gr);
+  }
+
+  /**
+   * Камера на всех телах игроков. Одно тело ведёт себя как раньше, двое раздвигают кадр
+   * и отдаляют масштаб, пока хватает предела. Не влезли — вызывающий делит экран.
+   */
+  sleditZaTelami(
+    tela: readonly { cx: number; cy: number }[],
+    gr: Uroven['granicy'] | null,
+  ): boolean {
+    const predel = { min: this.masshtabMin, maks: this.masshtabMaks };
+    const k = celKamery(tela, this.app.screen.width, this.app.screen.height, predel);
+    if (tela.length > 1) this.masshtab += (k.masshtab - this.masshtab) * 0.06;
+    const celX = k.x;
+    const celY = k.y;
     this.kamX += (celX - this.kamX) * 0.1;
     this.kamY += (celY - this.kamY) * 0.1;
     if (gr) {
@@ -58,6 +77,7 @@ export class Stsena {
       this.kamX = Math.max(gr.minX + polW, Math.min(gr.maxX - polW, this.kamX));
       this.kamY = Math.max(gr.minY + polH, Math.min(gr.maxY - polH, this.kamY));
     }
+    return k.vlezli;
   }
 
   risovat(

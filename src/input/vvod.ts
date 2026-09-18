@@ -5,6 +5,46 @@ import type { Namerenie } from '../game/telo';
 
 export type Knopka = 'vyazkost' | 'rasplav' | 'korka' | 'vybros';
 
+/** Раскладка одного игрока: коды клавиш на каждое действие. */
+export interface Raskladka {
+  vlevo: string[];
+  vpravo: string[];
+  vverh: string[];
+  vniz: string[];
+  vyazkost: string[];
+  rasplav: string[];
+  korka: string[];
+  vybros: string[];
+  sliyanie: string[];
+}
+
+// В соло первый игрок берёт и WASD, и стрелки. В кооперативе стрелки уходят второму,
+// иначе одна клавиша двигала бы обоих.
+export const RASKLADKI: { pervyy: Raskladka; vtoroy: Raskladka } = {
+  pervyy: {
+    vlevo: ['KeyA'],
+    vpravo: ['KeyD'],
+    vverh: ['KeyW'],
+    vniz: ['KeyS'],
+    vyazkost: ['KeyJ', 'KeyZ'],
+    rasplav: ['KeyK', 'KeyX'],
+    korka: ['KeyL', 'KeyC'],
+    vybros: ['Space', 'KeyV'],
+    sliyanie: ['KeyF'],
+  },
+  vtoroy: {
+    vlevo: ['ArrowLeft'],
+    vpravo: ['ArrowRight'],
+    vverh: ['ArrowUp'],
+    vniz: ['ArrowDown'],
+    vyazkost: ['Numpad1', 'Comma'],
+    rasplav: ['Numpad2', 'Period'],
+    korka: ['Numpad3', 'Slash'],
+    vybros: ['Numpad0', 'ShiftRight'],
+    sliyanie: ['Numpad5', 'KeyP'],
+  },
+};
+
 export interface NastroykiVvoda {
   pomoshchnikKasaniya: boolean;
   raskladka: 'wasd' | 'strelki';
@@ -33,16 +73,28 @@ export class Vvod {
   // подсказка помощника: тело касается стены и стик направлен в неё; выставляет игра
   uStenyNapravlenie = 0;
 
-  constructor(el: HTMLElement) {
-    window.addEventListener('keydown', (e) => {
-      this.klavishi.add(e.code);
-      if (e.code === 'Space') e.preventDefault();
-    });
-    window.addEventListener('keyup', (e) => this.klavishi.delete(e.code));
+  // Без DOM (тесты, headless-прогон) подписки просто не создаются, клавиши задаются вручную.
+  constructor(el?: HTMLElement) {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', (e) => {
+        this.nazhat(e.code);
+        if (e.code === 'Space') e.preventDefault();
+      });
+      window.addEventListener('keyup', (e) => this.otpustit(e.code));
+    }
+    if (!el) return;
     el.addEventListener('pointerdown', (e) => this.vniz(e));
     el.addEventListener('pointermove', (e) => this.dvizh(e));
     el.addEventListener('pointerup', (e) => this.vverh(e));
     el.addEventListener('pointercancel', (e) => this.vverh(e));
+  }
+
+  nazhat(kod: string): void {
+    this.klavishi.add(kod);
+  }
+
+  otpustit(kod: string): void {
+    this.klavishi.delete(kod);
   }
 
   // Ромб кнопок в правом нижнем углу. Радиус около 12 мм: 7% меньшей стороны, не меньше 34 px.
@@ -135,10 +187,10 @@ export class Vvod {
     return this.stikId !== -1 || this.palcy.size > 0;
   }
 
-  private geympad(): { dx: number; dy: number; k: Set<Knopka> } | null {
+  private geympad(nomer = 0): { dx: number; dy: number; k: Set<Knopka>; slit: boolean } | null {
     const pads =
       typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
-    const p = pads?.[0];
+    const p = pads?.[nomer];
     if (!p) return null;
     const mz = (v: number) => (Math.abs(v) < 0.2 ? 0 : v);
     const k = new Set<Knopka>();
@@ -153,7 +205,54 @@ export class Vvod {
     if (nazh(15)) dx = 1;
     if (nazh(12)) dy = 1;
     if (nazh(13)) dy = -1;
-    return { dx, dy, k };
+    return { dx, dy, k, slit: nazh(2) }; // X на геймпаде: слияние
+  }
+
+  /** Кооператив: второй игрок получает стрелки и второй геймпад. */
+  koop = false;
+  private readonly namVtorogo: Namerenie = {
+    dx: 0,
+    dy: 0,
+    vyazkost: false,
+    rasplav: false,
+    korka: false,
+    vybros: false,
+  };
+
+  private nazhata(kody: string[]): boolean {
+    for (const k of kody) if (this.klavishi.has(k)) return true;
+    return false;
+  }
+
+  /** Держит ли игрок кнопку слияния: клавиатура или X на его геймпаде. */
+  sliyanieNazhato(igrok: 0 | 1): boolean {
+    const r = igrok === 0 ? RASKLADKI.pervyy : RASKLADKI.vtoroy;
+    if (this.nazhata(r.sliyanie)) return true;
+    return this.geympad(igrok)?.slit ?? false;
+  }
+
+  /** Намерение второго игрока. Тач и помощник касания ему не положены: он на клавиатуре или геймпаде. */
+  sobratVtorogo(): Namerenie {
+    const r = RASKLADKI.vtoroy;
+    let dx = 0,
+      dy = 0;
+    if (this.nazhata(r.vlevo)) dx -= 1;
+    if (this.nazhata(r.vpravo)) dx += 1;
+    if (this.nazhata(r.vverh)) dy += 1;
+    if (this.nazhata(r.vniz)) dy -= 1;
+    const gp = this.geympad(1);
+    const n = this.namVtorogo;
+    if (gp && (gp.dx !== 0 || gp.dy !== 0)) {
+      dx = gp.dx;
+      dy = gp.dy;
+    }
+    n.dx = dx;
+    n.dy = dy;
+    n.vyazkost = this.nazhata(r.vyazkost) || !!gp?.k.has('vyazkost');
+    n.rasplav = this.nazhata(r.rasplav) || !!gp?.k.has('rasplav');
+    n.korka = this.nazhata(r.korka) || !!gp?.k.has('korka');
+    n.vybros = this.nazhata(r.vybros) || !!gp?.k.has('vybros');
+    return n;
   }
 
   // Собрать намерение на такт
@@ -161,10 +260,11 @@ export class Vvod {
     const k = this.klavishi;
     let dx = 0,
       dy = 0;
-    if (k.has('KeyA') || k.has('ArrowLeft')) dx -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) dx += 1;
-    if (k.has('KeyW') || k.has('ArrowUp')) dy += 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) dy -= 1;
+    const strelki = !this.koop; // в кооперативе стрелки принадлежат второму игроку
+    if (k.has('KeyA') || (strelki && k.has('ArrowLeft'))) dx -= 1;
+    if (k.has('KeyD') || (strelki && k.has('ArrowRight'))) dx += 1;
+    if (k.has('KeyW') || (strelki && k.has('ArrowUp'))) dy += 1;
+    if (k.has('KeyS') || (strelki && k.has('ArrowDown'))) dy -= 1;
     const t = new Set<Knopka>();
     for (const list of this.palcy.values()) for (const b of list) t.add(b);
     const gp = this.geympad();
