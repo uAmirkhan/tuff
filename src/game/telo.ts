@@ -91,11 +91,15 @@ export class Telo {
     this.kontur = mir.dobavitKontur(this.ot, this.n, TELO.obyom.zhestkost, TELO.obyom.kazhdyy);
   }
 
+  /** Тело в слитой паре. Цена слияния: Расплав недоступен (wiki 16-koop-dizayn, раздел 4.2). */
+  vSliyanii = false;
+
   // Применить намерение к параметрам частиц и связей. Вызывать до mir.shag().
   primenit(nam: Namerenie, korkaSredy = false): void {
     const m = this.mir;
     const korka = nam.korka || korkaSredy;
-    const trenie = nam.rasplav ? TELO.rasplavTrenie : TELO.trenie;
+    const rasplav = nam.rasplav && !this.vSliyanii;
+    const trenie = rasplav ? TELO.rasplavTrenie : TELO.trenie;
     for (let i = this.ot; i < this.ot + this.n; i++) {
       m.trenie[i] = trenie;
       m.gravMul[i] = korka ? TELO.korkaGravitatsiya : 1;
@@ -111,7 +115,7 @@ export class Telo {
     this.vybrosByl = nam.vybros;
     this.sost = korka
       ? 'korka'
-      : nam.rasplav
+      : rasplav
         ? 'rasplav'
         : nam.vyazkost
           ? 'vyazkost'
@@ -121,7 +125,7 @@ export class Telo {
     if (nam.dx > 0.2) this.napravlenie = 1;
     else if (nam.dx < -0.2) this.napravlenie = -1;
     // Расплав рвёт Вязкость; Корка (своя или принудительная от инея и воды) не липнет: иней-таймер сбрасывает со стены
-    if (nam.rasplav || !nam.vyazkost || korka) m.otlepitVse(this.ot, this.ot + this.n);
+    if (rasplav || !nam.vyazkost || korka) m.otlepitVse(this.ot, this.ot + this.n);
     // Ползание: якоря прилипших точек сдвигаются вдоль опоры по вводу
     if (nam.vyazkost && (nam.dx !== 0 || nam.dy !== 0)) {
       const shag = TELO.polzanie * MIR.shag;
@@ -172,7 +176,7 @@ export class Telo {
   // Вызывать после mir.shag(): создать связи Вязкости по контактам этого такта.
   posle(nam: Namerenie): void {
     const m = this.mir;
-    if (nam.vyazkost && !nam.rasplav && !this.korkaByla) {
+    if (nam.vyazkost && !(nam.rasplav && !this.vSliyanii) && !this.korkaByla) {
       for (let i = this.ot; i < this.ot + this.n; i++) {
         if (m.vPoTochke[i] !== -1) continue;
         if (m.kontakt[i]) {
