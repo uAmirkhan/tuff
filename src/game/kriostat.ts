@@ -94,18 +94,27 @@ export class Kriostat {
     this.taymer = taktov;
   }
 
-  /** датчик безопасности: тело на полу перед баком по ходу движения останавливает его, бак не давит */
-  private telNaPuti(dx: number, g: Gabarity): boolean {
-    if (g.minY >= this.verh - 0.2) return false;
+  /**
+   * Датчик безопасности: тело на полу перед баком по ходу движения останавливает его.
+   * Смотрит на ВСЕ тела игроков: в кооперативе бак иначе проехал бы по напарнику,
+   * потому что целится он только в героя.
+   */
+  private telNaPuti(dx: number, gabs: readonly Gabarity[]): boolean {
     const x1 = this.bak.x,
       x2 = this.bak.x + this.bak.w;
-    return dx > 0 ? g.minX < x2 + 0.35 && g.maxX > x1 : g.maxX > x1 - 0.35 && g.minX < x2;
+    for (const g of gabs) {
+      if (g.minY >= this.verh - 0.2) continue;
+      const meshaet =
+        dx > 0 ? g.minX < x2 + 0.35 && g.maxX > x1 : g.maxX > x1 - 0.35 && g.minX < x2;
+      if (meshaet) return true;
+    }
+    return false;
   }
 
-  private dvinut(dxZhelaemyy: number, g: Gabarity): void {
+  private dvinut(dxZhelaemyy: number, gabs: readonly Gabarity[]): void {
     const shag = KRIOSTAT.skorost / 60;
     const dx = Math.max(-shag, Math.min(shag, dxZhelaemyy));
-    if (this.telNaPuti(dx, g)) {
+    if (this.telNaPuti(dx, gabs)) {
       this.stoyat();
       return;
     }
@@ -145,12 +154,18 @@ export class Kriostat {
    * Вызывать из igra.takt после среды. gab габариты героя, geroyX его центр, vKorke герой в Корке,
    * skorostVniz положительная скорость тела вниз за такт. Возвращает, что делать с героем.
    */
+  /**
+   * @param gab габарит героя: по нему бак целится, обдувает и хватает
+   * @param gabProchih габариты остальных тел игроков: только для датчика безопасности
+   */
   takt(
     gab: Gabarity,
     geroyX: number,
     vKorke: boolean,
     skorostVniz: number,
+    gabProchih: readonly Gabarity[] = [],
   ): { moroz: boolean; uron: number } {
+    const vseGab = gabProchih.length ? [gab, ...gabProchih] : [gab];
     const otvet = { moroz: false, uron: 0 };
     if (this.pobezhdyon) {
       this.stoyat();
@@ -179,7 +194,7 @@ export class Kriostat {
           this.podVodoy = false;
           this.perevesti('obduv', KRIOSTAT.obduvTaktov);
           this.sobytiya.push('обдув');
-        } else this.dvinut(raznica, gab);
+        } else this.dvinut(raznica, vseGab);
         break;
       }
       case 'obduv':
@@ -222,7 +237,7 @@ export class Kriostat {
       case 'othod': {
         const domoy = this.bak.x0 - this.bak.x;
         if (Math.abs(domoy) < 1e-3) this.stoyat();
-        else this.dvinut(domoy, gab);
+        else this.dvinut(domoy, vseGab);
         if (--this.taymer <= 0) {
           this.perevesti('podhod', 0);
           this.podhodTaktov = 0;
