@@ -1,6 +1,7 @@
 // Проверка боевой сборки: `npx vite preview --port 5182 --host 127.0.0.1` (без --host слушает только [::1],
 // а Chromium из Playwright туда не пускает), страница грузится без ошибок, герой едет, меню открывается.
 import { chromium, devices } from '../../mars-colony/node_modules/playwright/index.mjs';
+
 const port = process.argv[2] ?? '5182';
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['Pixel 5 landscape'] });

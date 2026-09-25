@@ -2,6 +2,7 @@
 import { MIR } from '../src/game/config/telo';
 import { PUSTOE, Telo } from '../src/game/telo';
 import { Mir } from '../src/physics/mir';
+
 for (const kucha of [false, true]) {
   const mir = new Mir(MIR);
   mir.dobavitOtrezok(-200, 0, 200, 0);

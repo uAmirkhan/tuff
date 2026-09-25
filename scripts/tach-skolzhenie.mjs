@@ -1,4 +1,5 @@
 import { chromium, devices } from '../../mars-colony/node_modules/playwright/index.mjs';
+
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['Pixel 5 landscape'] });
 const page = await ctx.newPage();

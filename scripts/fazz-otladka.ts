@@ -4,6 +4,7 @@ import { type Namerenie, PUSTOE, Telo } from '../src/game/telo';
 import { urovenPoId } from '../src/level/spisok';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+
 function rnd(z: number) {
   let s = z;
   return () => {

@@ -110,8 +110,8 @@ describe('слияние: условие касания', () => {
       s.igra.razdelit();
       s.shag();
     }
-    // пул выделяется один раз: не больше одной связи на частицу тела
-    expect(s.mir.m - bylo).toBeLessThanOrEqual(s.a.n);
+    // пул выделяется один раз: связи ближних пар плюс каркас, не больше двух на частицу
+    expect(s.mir.m - bylo).toBeLessThanOrEqual(s.a.n * 2);
   });
 
   it('смерть рвёт слияние', () => {
@@ -164,7 +164,10 @@ describe('слияние: цена и выгода', () => {
     expect(para.a.cx).toBeLessThan(15);
   });
 
-  it('хрупкий пол с порогом 1,5: одиночка не ломает, слитая пара ломает', () => {
+  // Замер 18.09: хрупкий пол 1,0-2,0 — это окно «двое», а НЕ «слияние». Два несклеенных тела
+  // ломают его так же. Более того, после появления каркаса слитая пара бьёт слабее несклеенных:
+  // каркас распределяет удар. Тест закрепляет обе половины этой правды.
+  it('хрупкий пол 1,5: одиночка не ломает, двое рядом ломают, слитые нет', () => {
     const pol = (h: number): Poligon[] => [
       {
         tochki: [
@@ -203,9 +206,12 @@ describe('слияние: цена и выгода', () => {
     const odin = stsena(uroven(pol(1.5)), 11, 7.2);
     expect(slomal(odin, false)).toBe(false);
 
-    const para = stsena(uroven(pol(1.5)), 10.7, 7.2, 11.3, 7.2);
-    expect(para.igra.slit()).toBe(true);
-    expect(slomal(para, true)).toBe(true);
+    const dvoe = stsena(uroven(pol(1.5)), 10.7, 7.2, 11.3, 7.2);
+    expect(slomal(dvoe, true)).toBe(true);
+
+    const slitye = stsena(uroven(pol(1.5)), 10.7, 7.2, 11.3, 7.2);
+    expect(slitye.igra.slit()).toBe(true);
+    expect(slomal(slitye, true)).toBe(false);
   });
 });
 
@@ -223,15 +229,17 @@ describe('слияние: кто везёт слитую пару', () => {
     return (s.a.cx + s.b.cx) / 2 - x0;
   }
 
-  it('слитую пару один игрок везёт так же быстро, как двое', () => {
+  // До каркаса один игрок вёз пару со скоростью двоих (100%), то есть механика была больна
+  // пассажиром. Каркас сцепил кольца, и половина без хода работает тормозом.
+  it('слитую пару один игрок везёт заметно медленнее двоих', () => {
     const oba = put({ dx: 1 }, { dx: 1 }, true);
     const odin = put({ dx: 1 }, {}, true);
     expect(oba).toBeGreaterThan(15); // комната короче замерочной, важны отношения, не путь
-    // если это отношение когда-нибудь упадёт заметно ниже единицы, слияние начало требовать
-    // усилий обоих, и раздел «пассажир» в вики надо переписывать
-    expect(odin / oba).toBeGreaterThan(0.9);
+    expect(odin / oba).toBeLessThan(0.5);
   });
 
+  // Обратная сторона сцепки: партнёр останавливает пару одной клавишей. Правило 7
+  // кооп-дизайна («griefing невозможен») этим нарушено, и это записано в вики.
   it('встречный ввод замораживает слитую пару: это вектор для гриферства', () => {
     const oba = put({ dx: 1 }, { dx: 1 }, true);
     const vrazrez = put({ dx: 1 }, { dx: -1 }, true);
@@ -244,5 +252,31 @@ describe('слияние: кто везёт слитую пару', () => {
     const vrazrez = put({ dx: 1 }, { dx: -1 }, false);
     expect(odin / oba).toBeLessThan(0.7);
     expect(vrazrez / oba).toBeGreaterThan(0.3);
+  });
+});
+
+describe('слияние: выгода, ради которой оно существует', () => {
+  // Единственное уникальное преимущество слияния после замеров 18.09. Масса берётся и двумя
+  // телами, скорость не меняется, форма оседает. Остаётся прыжок, и он появился только
+  // с каркасом: до него слитая пара давала +0,28, то есть почти ничего.
+  function pryzhok(slivat: boolean, vdvoyom: boolean): number {
+    const s = stsena(uroven(POL), 10, 0.6, vdvoyom ? 10.9 : -50, vdvoyom ? 0.6 : -50);
+    for (let t = 0; t < 60; t++) s.shag();
+    if (slivat) expect(s.igra.slit()).toBe(true);
+    const y0 = s.a.cy;
+    let maks = y0;
+    for (let t = 0; t < 180; t++) {
+      s.shag({ vybros: true, dy: 1 }, { vybros: true, dy: 1 });
+      if (s.a.cy > maks) maks = s.a.cy;
+    }
+    return maks - y0;
+  }
+
+  it('слитая пара прыгает в разы выше, чем двое рядом и чем одиночка', () => {
+    const odinochka = pryzhok(false, false);
+    const dvoeRyadom = pryzhok(false, true);
+    const slitye = pryzhok(true, true);
+    expect(slitye).toBeGreaterThan(odinochka * 3);
+    expect(slitye).toBeGreaterThan(dvoeRyadom * 3);
   });
 });

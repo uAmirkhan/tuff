@@ -2,10 +2,11 @@
 import { MIR } from '../src/game/config/telo';
 import { Igra } from '../src/game/igra';
 import { PUSTOE, Telo } from '../src/game/telo';
+import type { Uroven } from '../src/level/format';
 import { UROVNI } from '../src/level/spisok';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
-import type { Uroven } from '../src/level/format';
+
 const u = UROVNI[0]!;
 // Свободные точки уровня для статистов замера: сетка по ширине, точка и её окрестность 0,6 вне многоугольников
 function svobodnyeTochki(u: Uroven, skolko: number): [number, number][] {
