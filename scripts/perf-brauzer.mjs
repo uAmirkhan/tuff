@@ -1,5 +1,6 @@
 // Замер кадра в браузере при ?perf=1: fps и такт из HUD через 6 секунд. node scripts/perf-brauzer.mjs [gpu]
 import { chromium } from '../../mars-colony/node_modules/playwright/index.mjs';
+
 const gpu = process.argv[2] === 'gpu';
 const browser = await chromium.launch({
   args: gpu

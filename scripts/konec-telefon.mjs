@@ -1,6 +1,7 @@
 // Экран конца уровня на телефоне: проходим 1-1 записанным вводом (как tests/prohozhdenie-1-1),
 // снимаем экран конца, тапаем «Дальше», проверяем, что открылся 1-2.
 import { chromium, devices } from '../../mars-colony/node_modules/playwright/index.mjs';
+
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['Pixel 5 landscape'] });
 const page = await ctx.newPage();

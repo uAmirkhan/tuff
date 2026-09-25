@@ -3,7 +3,12 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const banned = // Слова из протокола чистой комнаты, закодированы, чтобы публичный репозиторий не называл референс
-Buffer.from('dGFyYm95LGJvbmRzaW11bGF0aW9uLG9iamVjdGN5Y2xlLGNyZWF0ZXRhcmJveSxwaHlzaWNzdGVtcCxQSFlTSUNTQ1lDTEUsZnJlZWdpc2gsY3J5cHRpY3NlYSxjcnlwdGljIHNlYSxjaHJvbmljIGxvZ2ljLGdpc2g=', 'base64').toString().split(',');
+  Buffer.from(
+    'dGFyYm95LGJvbmRzaW11bGF0aW9uLG9iamVjdGN5Y2xlLGNyZWF0ZXRhcmJveSxwaHlzaWNzdGVtcCxQSFlTSUNTQ1lDTEUsZnJlZWdpc2gsY3J5cHRpY3NlYSxjcnlwdGljIHNlYSxjaHJvbmljIGxvZ2ljLGdpc2g=',
+    'base64',
+  )
+    .toString()
+    .split(',');
 const roots = ['src', 'tests'];
 let bad = 0;
 function walk(dir) {

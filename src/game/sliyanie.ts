@@ -16,7 +16,17 @@ export const SLIYANIE = {
   zhestkost: 0.5,
   dolyaDliny: 0.5, // длина связи от замеренного расстояния
   minDlina: 0.12,
-} as const;
+  // Каркас: связи «частица i тела А — частица i тела Б» с длиной по факту слияния.
+  // Без него слитая пара теряет выбранную форму: столб оседал с 1,57 до 0,93 за 10 секунд,
+  // потому что кольца ничем не держались друг относительно друга (замер 18.09).
+  karkasZhestkost: 0.9,
+  /**
+   * Косой каркас (связи ещё и через полкольца) держит форму чуть лучше, но режет прыжок.
+   * Развёртка 18.09: прямой даёт прыжок +0,90 при столбе 0,82, косой — +0,64 при столбе 1,01.
+   * Столб всё равно не держит исходные 1,57, поэтому форму не спасаем, а берём прыжок.
+   */
+  karkasKosoy: false,
+}; // не as const: значения калибруются прогонами scripts/sliyanie-kalibrovka.ts
 
 export class Sliyanie {
   private readonly pul: number[] = [];
@@ -55,11 +65,36 @@ export class Sliyanie {
     return !this.aktivno && this.pary().length >= SLIYANIE.minSvyazey;
   }
 
+  /**
+   * Каркас: связи между телами с длиной по факту слияния.
+   * Один сдвиг (i к i) держит расстояние, но не держит сдвиг вбок: шестнадцать параллельных
+   * связей это петля, и верхнее кольцо просто съезжает. Поэтому каркас косой: два сдвига,
+   * прямой и через полкольца, вместе дают треугольники.
+   */
+  private karkas(): [number, number, number][] {
+    const m = this.mir;
+    const out: [number, number, number][] = [];
+    const n = Math.min(this.a.n, this.b.n);
+    const sdvigi = SLIYANIE.karkasKosoy ? [0, Math.floor(n / 2)] : [0];
+    for (const sdvig of sdvigi) {
+      for (let k = 0; k < n; k++) {
+        const i = this.a.ot + k;
+        const j = this.b.ot + ((k + sdvig) % n);
+        const dx = (m.x[j] as number) - (m.x[i] as number);
+        const dy = (m.y[j] as number) - (m.y[i] as number);
+        out.push([i, j, Math.sqrt(dx * dx + dy * dy)]);
+      }
+    }
+    return out;
+  }
+
   /** Слить. Возвращает false, если тела слишком далеко. */
   slit(): boolean {
     if (this.aktivno) return true;
-    const p = this.pary();
-    if (p.length < SLIYANIE.minSvyazey) return false;
+    const blizkie = this.pary();
+    if (blizkie.length < SLIYANIE.minSvyazey) return false;
+    const p = [...blizkie, ...this.karkas()];
+    const skolkoBlizkih = blizkie.length;
     const m = this.mir;
     while (this.pul.length < p.length) {
       const s = m.dobavitSvyaz(this.a.ot, this.a.ot, SLIYANIE.zhestkost, 1, SLIYANIE.minDlina);
@@ -69,10 +104,11 @@ export class Sliyanie {
     for (let k = 0; k < p.length; k++) {
       const s = this.pul[k] as number;
       const [i, j, d] = p[k] as [number, number, number];
+      const karkas = k >= skolkoBlizkih;
       m.sA[s] = i;
       m.sB[s] = j;
-      m.sDlina[s] = Math.max(SLIYANIE.minDlina, d * SLIYANIE.dolyaDliny);
-      m.sZhest[s] = SLIYANIE.zhestkost;
+      m.sDlina[s] = karkas ? d : Math.max(SLIYANIE.minDlina, d * SLIYANIE.dolyaDliny);
+      m.sZhest[s] = karkas ? SLIYANIE.karkasZhestkost : SLIYANIE.zhestkost;
       m.sKazhdyy[s] = 1;
       m.sOdnostor[s] = 0;
       m.sRazryv[s] = 0;
