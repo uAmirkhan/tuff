@@ -9,6 +9,7 @@ import { UROVEN_K1_5 } from '../src/level/urovni/k1-5';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { PLANY } from './plany';
 
 type Shag = { takty: number; nam: Partial<Namerenie> };
 
@@ -44,15 +45,7 @@ describe('прохождение k1-5 «Криоархив»', () => {
   });
 
   it('бот по плану проходит мосты, открывает двери, зажигает узел и доходит до выхода', () => {
-    const { igra, sled, ur, porvano } = proyti([
-      { takty: 420, nam: { dx: 1 } }, // A, B, C: мост 1 без Корки, плита, дверь 1, мост 2, упор в дверь 2
-      { takty: 30, nam: { dx: -1 } },
-      { takty: 100, nam: { dx: 1, korka: true } }, // тяжёлая плита в Корке
-      { takty: 60, nam: { dx: 1 } },
-      { takty: 240, nam: { dx: 1, dy: 1, vyazkost: true } }, // D: блок, иней-потолок, иней-стена
-      { takty: 280, nam: { vyazkost: true } }, // E: узел, тело докатывается по инерции
-      { takty: 600, nam: { dx: 1 } }, // F: выход
-    ]);
+    const { igra, sled, ur, porvano } = proyti(PLANY['k1-5'] as Shag[]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
     expect(igra.smerti).toBe(0);
     expect(porvano).toBe(0); // обычное тело мост не рвёт
