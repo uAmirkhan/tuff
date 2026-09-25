@@ -138,3 +138,62 @@ console.log('\n=== Годится ли это как ворота ===');
     );
   }
 }
+
+console.log('\n=== Удержится ли ОДИНОЧКА на границе потоков ===');
+{
+  const odin = (sila: number, smeshchenie: number) => {
+    const mir = new Mir(MIR);
+    const ur = zagruzitUroven(mir, komnata(sila));
+    const a = new Telo(mir, SEREDINA + smeshchenie, 1.2);
+    const igra = new Igra(mir, a, ur);
+    for (let t = 0; t < 420; t++) {
+      igra.doShaga();
+      a.primenit(PUSTOE, igra.korkaSredy);
+      mir.shag();
+      a.posle(PUSTOE);
+      igra.takt(PUSTOE);
+      a.schitatCentr();
+    }
+    return a.cx;
+  };
+  const para = (sila: number, smeshchenie: number) => {
+    const mir = new Mir(MIR);
+    const ur = zagruzitUroven(mir, komnata(sila));
+    const a = new Telo(mir, SEREDINA + smeshchenie - 0.6, 1.2);
+    const b = new Telo(mir, SEREDINA + smeshchenie + 0.6, 1.2);
+    const igra = new Igra(mir, a, ur);
+    igra.dobavitSputnika(b);
+    const zony = ur.sushchnosti.filter((z) => z.tip === 'potok');
+    for (const z of zony) z.aktivna = false;
+    for (let t = 0; t < 20; t++) {
+      igra.doShaga();
+      a.primenit(PUSTOE, false);
+      b.primenit(PUSTOE, false);
+      mir.shag();
+      a.posle(PUSTOE);
+      b.posle(PUSTOE);
+      igra.takt(PUSTOE, [PUSTOE]);
+      a.schitatCentr();
+      b.schitatCentr();
+    }
+    igra.slit();
+    for (const z of zony) z.aktivna = true;
+    for (let t = 0; t < 420; t++) {
+      igra.doShaga();
+      a.primenit(PUSTOE, igra.korkaSredy);
+      b.primenit(PUSTOE, igra.korkaSredyTela(b));
+      mir.shag();
+      a.posle(PUSTOE);
+      b.posle(PUSTOE);
+      igra.takt(PUSTOE, [PUSTOE]);
+      a.schitatCentr();
+      b.schitatCentr();
+    }
+    return (a.cx + b.cx) / 2;
+  };
+  console.log(`сила 60, центр ${SEREDINA}. Смещение падения -> где оказались через 7 с`);
+  console.log('смещение  одиночка  слитая пара');
+  for (const sm of [0, 0.2, 0.5, 1.0]) {
+    console.log(`${String(sm).padEnd(9)} ${odin(60, sm).toFixed(2).padStart(8)} ${para(60, sm).toFixed(2).padStart(12)}`);
+  }
+}
