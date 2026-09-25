@@ -8,6 +8,7 @@ import { UROVEN_K1_4 } from '../src/level/urovni/k1-4';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { PLANY } from './plany';
 
 type Shag = { takty: number; nam: Partial<Namerenie> };
 
@@ -41,15 +42,7 @@ describe('прохождение k1-4 «Иней-камеры»', () => {
   });
 
   it('бот по плану лезет по инею, идёт по потолку, открывает дверь и доходит до выхода', () => {
-    const { igra, sled, ur } = proyti([
-      { takty: 200, nam: { dx: 1 } },
-      { takty: 170, nam: { dx: 1, dy: 1, vyazkost: true } }, // A: иней-стена за три секунды
-      { takty: 380, nam: { dx: 1, dy: 1, vyazkost: true } }, // B: сплошной потолок над водой до площадки
-      { takty: 40, nam: { dx: 1 } }, // C: с площадки в коридор, к Скачку и плите на 29,5
-      { takty: 120, nam: { dx: 1, korka: true } }, // Корка давит Скачка на плите, дверь; тяжёлым докатывается до ступени-гасителя
-      { takty: 300, nam: { dx: 1, dy: 1, vyazkost: true } }, // E: иней-потолок над ямой 5,5 за три секунды
-      { takty: 400, nam: { dx: 1 } },
-    ]);
+    const { igra, sled, ur } = proyti(PLANY['k1-4'] as Shag[]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
     expect(igra.smerti).toBe(0);
     expect(igra.serdca).toBeGreaterThanOrEqual(1);

@@ -8,6 +8,7 @@ import { UROVEN_K1_1 } from '../src/level/urovni/k1-1';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { PLANY } from './plany';
 
 type Shag = { takty: number; nam: Partial<Namerenie> };
 
@@ -43,12 +44,7 @@ describe('прохождение k1-1 «Зал баков»', () => {
   });
 
   it('бот по плану доходит до выхода без смертей', () => {
-    const { igra, telo, sled, mir, vVode } = proyti([
-      { takty: 90, nam: { dx: -1 } }, // A: ниша за разбитым баком
-      { takty: 420, nam: { dx: 1 } }, // зал, полки, поддон
-      { takty: 420, nam: { dx: 1, dy: 1, vyazkost: true } }, // D: стена крепежа
-      { takty: 900, nam: { dx: 1 } }, // площадка, ванна, пандус, выход
-    ]);
+    const { igra, telo, sled, mir, vVode } = proyti(PLANY['k1-1'] as Shag[]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
     expect(igra.smerti).toBe(0);
     expect(igra.serdca).toBeGreaterThanOrEqual(1); // камень в нише

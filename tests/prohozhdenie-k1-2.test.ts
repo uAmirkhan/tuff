@@ -8,6 +8,7 @@ import { UROVEN_K1_2 } from '../src/level/urovni/k1-2';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { PLANY } from './plany';
 
 type Shag = { takty: number; nam: Partial<Namerenie> };
 
@@ -41,19 +42,7 @@ describe('прохождение k1-2 «Промывочная»', () => {
   });
 
   it('бот по плану доходит до выхода, открывает крыло и берёт два камня', () => {
-    const { igra, sled, ur } = proyti([
-      { takty: 240, nam: { dx: 1 } },
-      { takty: 240, nam: { dx: 1, rasplav: true } }, // A: щель
-      { takty: 200, nam: { dx: 1 } }, // B, C: стекло над ямой, вода, плита
-      { takty: 160, nam: { dx: 1, rasplav: true } }, // боковой канал
-      { takty: 200, nam: { dx: -1, rasplav: true } },
-      { takty: 120, nam: { dx: -1 } },
-      { takty: 260, nam: { dx: 1 } }, // уголёк, горн
-      { takty: 300, nam: { dx: 1, korka: true } }, // D: Обрезок
-      { takty: 200, nam: { dx: 1 } },
-      { takty: 420, nam: { dx: 1, rasplav: true } }, // E: труба, форсунка
-      { takty: 600, nam: { dx: 1 } }, // G: выход
-    ]);
+    const { igra, sled, ur } = proyti(PLANY['k1-2'] as Shag[]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
     expect(igra.serdca).toBeGreaterThanOrEqual(2);
     expect(igra.smerti).toBeLessThanOrEqual(1); // бот сидит в тупике канала, пока Обрезок не дотянется

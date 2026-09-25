@@ -8,6 +8,7 @@ import { UROVEN_K1_3 } from '../src/level/urovni/k1-3';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { PLANY } from './plany';
 
 type Shag = { takty: number; nam: Partial<Namerenie> };
 
@@ -43,15 +44,7 @@ describe('прохождение k1-3 «Сортировка»', () => {
   });
 
   it('бот по плану ломает хрупкий пол и три слоя шахты и доходит до выхода', () => {
-    const { igra, sled, slomano, mir } = proyti([
-      { takty: 420, nam: { dx: 1 } }, // A, B: иней-камера, сход в Корке, хрупкий пол
-      { takty: 100, nam: { dx: 1 } }, // C, D: слив, конвейер
-      { takty: 300, nam: { dx: 1, korka: true } }, // пандус и сход в шахту в Корке
-      { takty: 200, nam: { korka: true } },
-      { takty: 300, nam: { dx: 1 } }, // тоннель
-      { takty: 420, nam: { dx: 1, dy: 1, vyazkost: true } }, // колодец
-      { takty: 400, nam: { dx: 1 } }, // выход
-    ]);
+    const { igra, sled, slomano, mir } = proyti(PLANY['k1-3'] as Shag[]);
     expect(igra.gotovo, sled.join('\n')).toBe(true);
     expect(igra.smerti).toBe(0);
     expect(slomano).toBe(4); // хрупкий пол под камерой и три слоя шахты
