@@ -1,6 +1,7 @@
 // Стенд: три типа кооп-препятствий из замеров прогоняются бот-проверкой на пассажира.
 // Это не уровни кампании, а испытательные комнаты под механику.
 import type { Obekt, Poligon, Uroven } from '../src/level/format';
+import { UROVEN_KOOP_1 } from '../src/level/urovni/koop-1';
 import { pechat, proveritPassazhira, type Uchastok } from './koop-bot';
 
 const POPYTOK = 25;
@@ -38,6 +39,17 @@ function komnata(id: string, pol: Poligon[], ob: Obekt[] = [], h = 14): Uroven {
 }
 
 const uchastki: Uchastok[] = [
+  {
+    nazvanie: 'koop-1: ледяные ворота 2,0 (задумано: только слиянием)',
+    uroven: UROVEN_KOOP_1,
+    gde: [
+      [UROVEN_KOOP_1.start[0], UROVEN_KOOP_1.start[1]],
+      [UROVEN_KOOP_1.start[0] + 1.2, UROVEN_KOOP_1.start[1]],
+    ],
+    // пройдено: ОБА наверху за стеной
+    proydeno: (a, b) => a.cx > 31 && a.cy > 2.2 && b.cx > 31 && b.cy > 2.2,
+    taktov: 1600,
+  },
   {
     nazvanie: 'хрупкий пол 1,5 (задумано: только слиянием)',
     uroven: komnata('stend-hrupkiy', [
