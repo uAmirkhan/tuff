@@ -141,9 +141,19 @@ export interface Nahodka {
 export function iskatProhod(
   u: Uchastok,
   ocenka: Ocenka,
-  opcii: { popytok?: number; semya?: number; vtoroy?: Povadka; bezSliyaniya?: boolean } = {},
+  opcii: {
+    popytok?: number;
+    semya?: number;
+    /** второе тело ведёт эта повадка, ищется план ПЕРВОГО */
+    vtoroy?: Povadka;
+    /** первое тело ведёт эта повадка, ищется план ВТОРОГО. Нужно, когда герой заперт в своём
+     *  соло-плане: план записан от старта уровня и на второе тело его ставить нельзя. */
+    pervyy?: Povadka;
+    bezSliyaniya?: boolean;
+  } = {},
 ): Nahodka {
-  const { popytok = 400, semya = 1, vtoroy, bezSliyaniya = false } = opcii;
+  const { popytok = 400, semya = 1, vtoroy, pervyy, bezSliyaniya = false } = opcii;
+  if (pervyy) return iskatVtorogo(u, ocenka, pervyy, popytok, semya, bezSliyaniya);
   const r = zerno(semya);
   const snyatSliyanie = (p: Plan) => (bezSliyaniya ? p.map((o) => ({ ...o, slit: false })) : p);
   let planA = snyatSliyanie(sluchaynyyPlan(r));
@@ -164,4 +174,28 @@ export function iskatProhod(
     }
   }
   return { ...luchshee, plan: planA, planVtorogo: planB, popytok };
+}
+
+/** Первое тело заперто в повадке, ищется план второго. */
+function iskatVtorogo(
+  u: Uchastok,
+  ocenka: Ocenka,
+  pervyy: Povadka,
+  popytok: number,
+  semya: number,
+  bezSliyaniya: boolean,
+): Nahodka {
+  const r = zerno(semya);
+  const snyat = (p: Plan) => (bezSliyaniya ? p.map((o) => ({ ...o, slit: false })) : p);
+  let planB = snyat(sluchaynyyPlan(r));
+  let luchshee = progonSOcenkoy(u, pervyy, povadkaIzPlana(planB), ocenka);
+  for (let i = 0; i < popytok && !luchshee.proshli; i++) {
+    const kandidat = snyat(isportit(planB, r));
+    const itog = progonSOcenkoy(u, pervyy, povadkaIzPlana(kandidat), ocenka);
+    if (itog.proshli || itog.luchshaya > luchshee.luchshaya) {
+      planB = kandidat;
+      luchshee = itog;
+    }
+  }
+  return { ...luchshee, plan: planB, planVtorogo: null, popytok };
 }
