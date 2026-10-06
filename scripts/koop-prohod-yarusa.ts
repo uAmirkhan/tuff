@@ -42,17 +42,19 @@ interface Itog {
 interface Nastroyka {
   szadi: boolean; // напарник стартует позади героя
   kopiruet: boolean; // повторяет способности героя
+  zhdet: boolean; // убежав вперёд, останавливается и ждёт, а не идёт назад
 }
 
-const NASTROYKI: Nastroyka[] = [
-  { szadi: false, kopiruet: true },
-  { szadi: true, kopiruet: true },
-  { szadi: false, kopiruet: false },
-  { szadi: true, kopiruet: false },
-];
+// Третья ось добавлена после сверки курса: прежний напарник, убежав вперёд, разворачивался и
+// шёл НАВСТРЕЧУ герою, то есть лез ему под ноги в самом узком месте. Живой человек в такой
+// ситуации просто останавливается. Без этой повадки «не прошли» могло значить «бот мешал».
+const NASTROYKI: Nastroyka[] = [];
+for (const szadi of [false, true])
+  for (const kopiruet of [true, false])
+    for (const zhdet of [false, true]) NASTROYKI.push({ szadi, kopiruet, zhdet });
 
 const imya = (k: Nastroyka) =>
-  `${k.szadi ? 'сзади' : 'спереди'}, ${k.kopiruet ? 'копирует' : 'не копирует'}`;
+  `${k.szadi ? 'сзади' : 'спереди'}, ${k.kopiruet ? 'копирует' : 'не копирует'}${k.zhdet ? ', ждёт' : ''}`;
 
 function progon(u: Uroven, plan: Shag[], vdvoyom: boolean, k: Nastroyka): Itog {
   const mir = new Mir(MIR);
@@ -71,8 +73,11 @@ function progon(u: Uroven, plan: Shag[], vdvoyom: boolean, k: Nastroyka): Itog {
       let nb: Namerenie = n;
       if (b) {
         const svoi: Namerenie = k.kopiruet ? n : { ...PUSTOE, dx: n.dx, dy: n.dy }; // без способностей героя
-        const raznica = a.cx - b.cx;
-        nb = Math.abs(raznica) > OTSTAL ? { ...svoi, dx: Math.sign(raznica), dy: svoi.dy } : svoi;
+        const raznica = a.cx - b.cx; // >0 герой впереди, <0 напарник убежал вперёд
+        if (Math.abs(raznica) <= OTSTAL) nb = svoi;
+        else if (raznica > 0)
+          nb = { ...svoi, dx: 1, dy: svoi.dy }; // подтянуться к герою
+        else nb = k.zhdet ? { ...PUSTOE } : { ...svoi, dx: -1, dy: svoi.dy }; // ждать или вернуться
       }
       igra.doShaga();
       a.primenit(n, igra.korkaSredy);
@@ -123,15 +128,17 @@ const est = UROVNI.filter((u) => PLANY[u.id]);
 const net = UROVNI.filter((u) => !PLANY[u.id]).map((u) => u.id);
 
 console.log('=== Ярус 1 вдвоём: герой по плану, напарник следом ===');
-console.log('Уровень проходим, если проходится хотя бы в одной из четырёх конфигураций напарника.');
+console.log(
+  `Уровень проходим, если проходится хотя бы в одной из ${NASTROYKI.length} конфигураций напарника.`,
+);
 console.log('');
-console.log('уровень  соло  вдвоём  из 4  тактов  смерти  сторожа  конфигурация');
+console.log('уровень  соло  вдвоём  из 8  тактов  смерти  сторожа  конфигурация');
 for (const u of est) {
   const plan = PLANY[u.id] as Shag[];
   const odin = progon(u, plan, false, NASTROYKI[0] as Nastroyka);
   const { itog: para, skolko } = luchshiy(u, plan);
   console.log(
-    `${u.id.padEnd(8)} ${(odin.proyden ? ' да ' : ' НЕТ').padEnd(5)} ${(para.proyden ? ' да ' : ' НЕТ').padEnd(7)} ${String(skolko).padStart(3)}/4 ${String(para.takty).padStart(7)} ${String(para.smerti).padStart(7)} ${String(para.storozhey).padStart(8)}  ${para.nastroyka}`,
+    `${u.id.padEnd(8)} ${(odin.proyden ? ' да ' : ' НЕТ').padEnd(5)} ${(para.proyden ? ' да ' : ' НЕТ').padEnd(7)} ${String(skolko).padStart(3)}/8 ${String(para.takty).padStart(7)} ${String(para.smerti).padStart(7)} ${String(para.storozhey).padStart(8)}  ${para.nastroyka}`,
   );
   if (!para.proyden) console.log(`         ↳ ${para.gde}`);
   if (para.storozhey) console.log(`         ↳ сторожа: ${para.zhurnal.slice(0, 2).join(' | ')}`);

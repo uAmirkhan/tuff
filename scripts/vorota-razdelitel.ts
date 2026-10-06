@@ -194,6 +194,8 @@ console.log('\n=== Удержится ли ОДИНОЧКА на границе 
   console.log(`сила 60, центр ${SEREDINA}. Смещение падения -> где оказались через 7 с`);
   console.log('смещение  одиночка  слитая пара');
   for (const sm of [0, 0.2, 0.5, 1.0]) {
-    console.log(`${String(sm).padEnd(9)} ${odin(60, sm).toFixed(2).padStart(8)} ${para(60, sm).toFixed(2).padStart(12)}`);
+    console.log(
+      `${String(sm).padEnd(9)} ${odin(60, sm).toFixed(2).padStart(8)} ${para(60, sm).toFixed(2).padStart(12)}`,
+    );
   }
 }
