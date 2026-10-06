@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { PUSTOE } from '../src/game/telo';
 import type { Uroven } from '../src/level/format';
 import { PASSAZHIRY, type Povadka, type Uchastok, progon } from '../scripts/koop-bot';
+import { type Plan, povadkaIzPlana } from '../scripts/koop-poisk';
 
 const PROYOM = 30;
 const SHIRINA = 8;
@@ -71,5 +72,24 @@ describe('ворота по длине', () => {
     for (const [imya, p] of Object.entries(PASSAZHIRY))
       for (const f of FAZY)
         expect(progon(uchastok, plan(f, true), p, 2), `${imya}, фаза ${f}`).toBe(false);
-    }, 60_000);
+  }, 60_000);
+
+  // НО ЭТО НЕ ЗНАЧИТ, ЧТО ВОРОТА ЧИСТЫ. Ищущий бот (scripts/koop-poisk.ts) нашёл проход с
+  // напарником, который только держит «вперёд» и слияние. Мои сценарии его не находили, потому
+  // что проверяли ровно то, что я предполагала: герой якобы не может отойти за разбегом, когда
+  // партнёр жмёт вперёд. Может — и в конце ещё и расцепляется.
+  it('но ищущий бот открывает их напарником «жмёт вперёд и слияние»', () => {
+    const NAYDENO: Plan = [
+      { taktov: 40, slit: true, nam: { ...PUSTOE, dy: 1, vybros: true } },
+      { taktov: 152, slit: true, nam: { ...PUSTOE, dx: 1, dy: 1 } },
+      { taktov: 174, slit: true, nam: { ...PUSTOE, dx: -1, dy: 1 } },
+      { taktov: 126, slit: true, nam: { ...PUSTOE, dx: 1, dy: 1, vybros: true, vyazkost: true } },
+      { taktov: 184, slit: true, nam: { ...PUSTOE, dx: -1, dy: 1 } },
+      { taktov: 183, slit: false, nam: { ...PUSTOE, dx: -1 } },
+    ];
+    expect(
+      progon(uchastok, povadkaIzPlana(NAYDENO), PASSAZHIRY['жмёт вперёд и слияние'] as Povadka, 3),
+      'если стало false — болезнь ушла, перепроверь поиском и перепиши отчёт',
+    ).toBe(true);
+  });
 });
