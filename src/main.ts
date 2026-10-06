@@ -29,6 +29,16 @@ const komnata = params.get('komnata') === '1';
 const perf = params.get('perf') === '1';
 // ?chisto=1: без отладочного текста и сенсорных кнопок, для кадров на страницу порталов
 const chisto = params.get('chisto') === '1';
+// ?stopkadr=1: F9 замораживает симуляцию, НЕ трогая ввод и не открывая меню. Нужно, чтобы
+// проверять каналы отрисовки диффом соседних кадров: на замороженной симуляции кадры выходят
+// байт в байт одинаковыми, и любое расхождение — это ровно проверяемый канал. Пауза меню для
+// этого не годится: она роняет слияние, и натяжение обнуляется.
+const stopkadr = params.get('stopkadr') === '1';
+let zamorozheno = false;
+if (stopkadr)
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'F9') zamorozheno = !zamorozheno;
+  });
 // ?otladka=1: строки fps, такта и промахов в HUD (тестерам не показываются)
 const otladka = params.get('otladka') === '1' || perf;
 // сенсорные кнопки рисуются на устройствах с касанием или после первого касания
@@ -516,7 +526,8 @@ async function start(): Promise<void> {
     const now = performance.now();
     nakoplen += Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (menyuPokazano || ekranPokazan || pauzaPloshchadki) nakoplen = 0; // пауза: симуляция стоит
+    // пауза: симуляция стоит
+    if (menyuPokazano || ekranPokazan || pauzaPloshchadki || zamorozheno) nakoplen = 0;
     while (nakoplen >= MIR.shag) {
       vvod.uStenyNapravlenie = telo.stenaSboku();
       const nam = vvod.sobrat();
