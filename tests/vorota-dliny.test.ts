@@ -46,27 +46,30 @@ const uchastok: Uchastok = {
   taktov: 900,
 };
 
-const plan: Povadka = (t) => {
-  if (t < 60) return { nam: { ...PUSTOE }, slit: true };
-  if (t < 300) return { nam: { ...PUSTOE, dx: -1 }, slit: true };
-  return { nam: { ...PUSTOE, dx: 1 }, slit: true };
+const plan = (sdvig: number, slit: boolean): Povadka => (t) => {
+  if (t < 60) return { nam: { ...PUSTOE }, slit };
+  if (t < 300 + sdvig) return { nam: { ...PUSTOE, dx: -1 }, slit };
+  return { nam: { ...PUSTOE, dx: 1 }, slit };
 };
-const planBezSliyaniya: Povadka = (t) => ({ nam: plan(t, () => 0).nam, slit: false });
 
-const SEMENA = [1, 5, 11, 23, 37];
+// НЕ семена: семя кормит sluchay, а сценарий вручную его не читает, поэтому пять семян давали
+// один и тот же прогон пять раз (найдено на витке 012). Меняем длину отхода.
+const FAZY = [-80, -40, 0, 40, 80, 120, 160];
 
 describe('ворота по длине', () => {
-  it('слитая пара перелетает проём 8 на всех семенах', () => {
-    for (const z of SEMENA) expect(progon(uchastok, plan, plan, z), `семя ${z}`).toBe(true);
+  it('слитая пара перелетает проём 8 на всех фазах отхода', () => {
+    for (const f of FAZY)
+      expect(progon(uchastok, plan(f, true), plan(f, true), 1), `фаза ${f}`).toBe(true);
   });
 
-  it('тот же план без слияния не проходит', () => {
-    for (const z of SEMENA)
-      expect(progon(uchastok, planBezSliyaniya, planBezSliyaniya, z), `семя ${z}`).toBe(false);
+  it('тот же план без слияния не проходит ни на одной фазе', () => {
+    for (const f of FAZY)
+      expect(progon(uchastok, plan(f, false), plan(f, false), 1), `фаза ${f}`).toBe(false);
   });
 
-  it('ни одна повадка пассажира ворота не открывает', () => {
+  it('ни одна повадка пассажира ворота не открывает ни на одной фазе', () => {
     for (const [imya, p] of Object.entries(PASSAZHIRY))
-      expect(progon(uchastok, plan, p, 2), imya).toBe(false);
-  });
+      for (const f of FAZY)
+        expect(progon(uchastok, plan(f, true), p, 2), `${imya}, фаза ${f}`).toBe(false);
+    }, 60_000);
 });
