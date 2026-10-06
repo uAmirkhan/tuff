@@ -5,19 +5,15 @@ import { describe, expect, it } from 'vitest';
 import { MIR } from '../src/game/config/telo';
 import { Igra } from '../src/game/igra';
 import { type Namerenie, PUSTOE, Telo } from '../src/game/telo';
-import { DYRY, UROVEN_K1_6 } from '../src/level/urovni/k1-6';
+import { UROVEN_K1_6 } from '../src/level/urovni/k1-6';
 import { proveritUroven } from '../src/level/validator';
 import { zagruzitUroven } from '../src/level/zagruzka';
 import { Mir } from '../src/physics/mir';
+import { POLOK, type Rezhim16, SHAG, zigzagK16 } from './povadki';
 
-const SHAG = 1.6;
-const POLKA = 0.3;
-const SHIRINA = 16;
-const POLOK = DYRY.length;
+type Rezhim = Rezhim16;
 
-type Rezhim = 'bystro' | 'vetka' | 'stoyat';
-
-/** Бот-зигзаг: на ярусе i катит к стене с дырой полки i+1, у стены Вязкостью вверх, наверху по потолку на полку */
+/** Прогон уровня вынесенной повадкой-зигзагом (tests/povadki.ts). */
 function proyti(rezhim: Rezhim, maksTaktov: number) {
   const u = UROVEN_K1_6;
   const mir = new Mir(MIR);
@@ -26,51 +22,12 @@ function proyti(rezhim: Rezhim, maksTaktov: number) {
   const igra = new Igra(mir, telo, ur);
   const voda = ur.sushchnosti.find((s) => s.id === 'promyvka');
   if (!voda) throw new Error('нет воды promyvka');
-  const napravlenie = (i: number): number => (i >= POLOK ? -1 : DYRY[i] === 'R' ? 1 : -1);
-  let yarus = 0;
-  let faza: 'katit' | 'vverh' | 'na-polku' = 'katit';
-  let celY = 0;
-  let stena = 1;
-  let smertey = 0;
+  const vedyot = zigzagK16(rezhim);
   let vodaPosleSmerti = Number.NaN;
   let t = 0;
   for (; t < maksTaktov; t++) {
     telo.schitatCentr();
-    const x = telo.cx;
-    const y = telo.cy;
-    if (igra.smerti !== smertey) {
-      smertey = igra.smerti;
-      faza = 'katit';
-    }
-    const nyne = Math.max(0, Math.floor((y - 0.6) / SHAG));
-    if (nyne !== yarus && faza === 'katit') yarus = nyne;
-    const dir = napravlenie(yarus);
-    let nam: Namerenie = { ...PUSTOE };
-    if (rezhim !== 'stoyat') {
-      if (faza === 'katit') {
-        nam = { ...PUSTOE, dx: dir };
-        const uSteny = dir > 0 ? x > SHIRINA - 0.9 : x < 0.9;
-        if (uSteny && yarus < POLOK) {
-          faza = 'vverh';
-          stena = dir;
-          celY = SHAG * (yarus + 1) + POLKA + 0.7; // центр упирается в низ следующей полки
-        }
-      }
-      if (faza === 'vverh') {
-        nam = { ...PUSTOE, dx: stena, dy: 1, vyazkost: true };
-        if (y >= celY) faza = 'na-polku';
-      }
-      if (faza === 'na-polku') {
-        nam = { ...PUSTOE, dx: -stena, dy: 1, vyazkost: true };
-        const daleko = stena > 0 ? x < SHIRINA - 2.2 : x > 2.2;
-        if (daleko) {
-          faza = 'katit';
-          yarus = Math.max(0, Math.floor((y - 0.6) / SHAG));
-        }
-      }
-      if (rezhim === 'vetka' && faza === 'katit' && yarus === 0 && igra.serdca === 0)
-        nam = { ...PUSTOE, dx: -1 };
-    }
+    const nam = vedyot(telo, igra);
     igra.doShaga();
     telo.primenit(nam, igra.korkaSredy);
     mir.shag();
