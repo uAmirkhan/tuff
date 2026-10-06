@@ -94,6 +94,13 @@ export class Telo {
   /** Тело в слитой паре. Цена слияния: Расплав недоступен (wiki 16-koop-dizayn, раздел 4.2). */
   vSliyanii = false;
 
+  /**
+   * Доля усилия движения, которую даёт одна половина слитой пары. Единица — прежнее поведение.
+   * Проба руками включается адресом `?tyaga=popolam`: умолчание не меняется до слова Khan,
+   * потому что это меняет ощущение игры.
+   */
+  static tyagaVSliyanii = 1;
+
   // Применить намерение к параметрам частиц и связей. Вызывать до mir.shag().
   primenit(nam: Namerenie, korkaSredy = false): void {
     const m = this.mir;
@@ -166,7 +173,7 @@ export class Telo {
           ry = (m.y[i] as number) - cy;
         const l = Math.sqrt(rx * rx + ry * ry) || 1;
         // вправо = по часовой: касательная (ry, -rx)
-        const s = nam.dx * TELO.spin * spinDolya;
+        const s = nam.dx * TELO.spin * spinDolya * (this.vSliyanii ? Telo.tyagaVSliyanii : 1);
         m.px[i] = (m.px[i] as number) - (ry / l) * s;
         m.py[i] = (m.py[i] as number) + (rx / l) * s;
       }

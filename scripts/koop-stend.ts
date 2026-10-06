@@ -38,7 +38,80 @@ function komnata(id: string, pol: Poligon[], ob: Obekt[] = [], h = 14): Uroven {
   };
 }
 
+// Обратные ворота (сверка курса 005): дыра в полу, за ней ледяной уступ. Одиночка
+// проваливается и не может встать под уступ для живой ступени; слитая пара перекрывает дыру
+// собой и достаёт до уступа. Замер строгой развёрткой (scripts/vorota-obratnye2.ts): на уступе
+// 2,2 одиночка и двое врозь не берут НИ РАЗУ при шести разбегах, слитые берут 3 из 6.
+const KRAY = 20;
+const SHIRINA = 1.2;
+const VYS = 2.2;
+const DAL = KRAY + SHIRINA;
+const OBRATNYE: Uroven = {
+  versiya: 1,
+  id: 'stend-obratnye',
+  nazvanie: 'Обратные ворота',
+  mysl: 'Только вместе',
+  start: [10, 0.6],
+  granicy: { minX: -1, minY: -3, maxX: 40, maxY: 20 },
+  vremyaZvezdy: 60,
+  poligony: [
+    {
+      tochki: [
+        [-1, -3],
+        [0, -3],
+        [0, 18],
+        [-1, 18],
+      ],
+    },
+    {
+      tochki: [
+        [39, -3],
+        [40, -3],
+        [40, 18],
+        [39, 18],
+      ],
+    },
+    {
+      tochki: [
+        [-1, -3],
+        [KRAY, -3],
+        [KRAY, 0],
+        [-1, 0],
+      ],
+    },
+    {
+      tochki: [
+        [KRAY, -3],
+        [DAL, -3],
+        [DAL, -1],
+        [KRAY, -1],
+      ],
+    },
+    {
+      tochki: [
+        [DAL, -3],
+        [39, -3],
+        [39, VYS],
+        [DAL, VYS],
+      ],
+      material: 'lyod',
+    },
+  ],
+  obekty: [{ tip: 'vyhod', id: 'v', x: 36, y: VYS + 0.5 }],
+};
+
 const uchastki: Uchastok[] = [
+  {
+    nazvanie: `обратные ворота: дыра ${SHIRINA}, ледяной уступ ${VYS} (задумано: только слитым)`,
+    uroven: OBRATNYE,
+    gde: [
+      [10, 0.6],
+      [10.9, 0.6],
+    ],
+    // пройдено: ОБА наверху за дырой. Одно тело наверху — это застрявшая пара, а не проход
+    proydeno: (a, b) => a.cx > DAL && a.cy > VYS + 0.45 && b.cx > DAL && b.cy > VYS + 0.45,
+    taktov: 1600,
+  },
   {
     nazvanie: 'koop-1: ледяные ворота 2,0 (задумано: только слиянием)',
     uroven: UROVEN_KOOP_1,

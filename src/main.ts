@@ -57,6 +57,12 @@ let telo: Telo;
 // Кооп включается адресом ?koop=1. Это заглушка до меню: игровая модель на двоих уже есть,
 // а как её выбирать игроку — решается вместе с дизайном.
 const koop = params.get('koop') === '1';
+// Пробы руками, включаются адресом. Умолчание не меняется до слова Khan: обе правки меняют
+// ощущение игры, а оно на бумаге не решается.
+//   ?sliyanie=knopka — слияние переключателем, а не удержанием двух кнопок
+//   ?tyaga=popolam   — половина слитой пары даёт половину усилия движения
+const sliyanieKnopkoy = params.get('sliyanie') === 'knopka';
+if (params.get('tyaga') === 'popolam') Telo.tyagaVSliyanii = 0.5;
 let telo2: Telo | null = null;
 let slitiePodderzhano = false;
 let igra: Igra | null = null;
@@ -497,10 +503,21 @@ async function start(): Promise<void> {
       // Флаг удержания намеренно НЕ сбрасывается, когда игра расцепила пару сама (встречный
       // ввод). Иначе вышел бы цикл «расцепился — тут же слился — снова замёрз»: кнопки-то
       // всё ещё нажаты. Чтобы слиться заново, надо отпустить и нажать снова.
+      //
+      // При ?sliyanie=knopka правило другое: нажатие обоими переключает состояние, и держать
+      // ничего не надо.
       if (igra && telo2) {
         const hotyat = vvod.sliyanieNazhato(0) && vvod.sliyanieNazhato(1);
-        if (hotyat && !slitiePodderzhano) igra.slit();
-        else if (!hotyat && slitiePodderzhano) igra.razdelit();
+        if (sliyanieKnopkoy) {
+          // переключатель: держать не надо, важен сам момент нажатия обоими
+          if (hotyat && !slitiePodderzhano) {
+            if (igra.slito) igra.razdelit();
+            else igra.slit();
+          }
+        } else {
+          if (hotyat && !slitiePodderzhano) igra.slit();
+          else if (!hotyat && slitiePodderzhano) igra.razdelit();
+        }
         slitiePodderzhano = hotyat;
       }
       telo.primenit(nam, igra?.korkaSredy ?? false);

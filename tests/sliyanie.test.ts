@@ -340,3 +340,36 @@ describe('слияние: выгода, ради которой оно суще�
     expect(slitye).toBeGreaterThan(dvoeRyadom * 3);
   });
 });
+
+describe('слияние: проба тяги пополам (флаг, умолчание не тронуто)', () => {
+  // Флаг ?tyaga=popolam. Умолчание — единица, то есть прежнее поведение. Ощущение на бумаге
+  // не решается, поэтому проба включается адресом, а решение об умолчании за Khan.
+  function put(tyaga: number, odin: boolean): number {
+    Telo.tyagaVSliyanii = tyaga;
+    try {
+      const s = stsena(uroven(POL), 6, 0.6, 6.9, 0.6);
+      for (let t = 0; t < 30; t++) s.shag();
+      expect(s.igra.slit()).toBe(true);
+      s.a.schitatCentr();
+      const x0 = s.a.cx;
+      for (let t = 0; t < 420; t++) s.shag({ dx: 1 }, odin ? {} : { dx: 1 });
+      return s.a.cx - x0;
+    } finally {
+      Telo.tyagaVSliyanii = 1; // умолчание восстанавливается, чтобы не утечь в другие тесты
+    }
+  }
+
+  // Замер показал неожиданное: когда жмут ОБА, половинная тяга почти ничего не меняет
+  // (23,80 против 23,74) — узкое место не в тяге, а в сцепке каркаса. Флаг действует там,
+  // где везёт один, и это как раз случай, ради которого он предлагался.
+  it('на обоих тяга почти не сказывается, на одном водителе — заметно', () => {
+    const obaPolnaya = put(1, false);
+    const obaPolovina = put(0.5, false);
+    expect(Math.abs(obaPolovina - obaPolnaya)).toBeLessThan(obaPolnaya * 0.1);
+
+    const odinPolnaya = put(1, true);
+    const odinPolovina = put(0.5, true);
+    expect(odinPolovina).toBeLessThan(odinPolnaya);
+    expect(Telo.tyagaVSliyanii).toBe(1); // флаг не протёк
+  });
+});
