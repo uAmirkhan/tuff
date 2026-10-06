@@ -428,11 +428,17 @@ function risovatUi(): void {
     }
   }
   if (igra) {
+    // Шкала жара на КАЖДОЕ тело игрока: в кооперативе одна шкала врала, показывая только героя.
+    // Вторая красится оттенком своей половины, чтобы шкалу можно было связать с телом.
     const w = window.innerWidth;
-    ui.rect(w / 2 - 100, 12, 200, 6);
-    ui.fill({ color: 0xffffff, alpha: 0.15 });
-    ui.rect(w / 2 - 100, 12, (200 * igra.zhar) / 100, 6);
-    ui.fill({ color: 0xff8c3a, alpha: 0.9 });
+    const CVETA = [0xff8c3a, 0xff6a8e];
+    for (let i = 0; i < igra.zhizni.length; i++) {
+      const y = 12 + i * 10;
+      ui.rect(w / 2 - 100, y, 200, 6);
+      ui.fill({ color: 0xffffff, alpha: 0.15 });
+      ui.rect(w / 2 - 100, y, (200 * (igra.zhizni[i]?.zhar ?? 0)) / ZHAR.maks, 6);
+      ui.fill({ color: CVETA[i] ?? 0xffffff, alpha: 0.9 });
+    }
   }
 }
 
@@ -546,6 +552,8 @@ async function start(): Promise<void> {
       igra?.vragi ?? [],
       igra?.boss ?? null,
       prizrak && !prizrak.zakonchen ? prizrak.telo : null,
+      (igra?.zhizni ?? []).map((z) => z.zhar / ZHAR.maks),
+      igra?.slito ?? false,
     );
     risovatUi();
     // подписи значков обучения

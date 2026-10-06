@@ -10,6 +10,28 @@ import type { Mir } from '../physics/mir';
 import { Fon } from './fon';
 import { celKamery } from './kamera';
 
+// Признаки состояния в кооперативе: холод, обогрев, различимость половин.
+const KOOP = {
+  holod: 0x5a7a9e, // стылый цвет, к которому уходит тело, теряя жар
+  poragHoloda: 0.75, // выше этой доли жара холод не показывается вовсе
+  silaHoloda: 0.85, // насколько далеко уходит цвет на нуле жара
+  obogrev: 0xffe6a0, // свечение слитой пары, которая греется
+  obogrevRadius: 1.45,
+  vtoraya: 0xd94f7a, // оттенок второй половины
+  silaVtoroy: 0.22,
+} as const;
+
+/** Смешать два цвета по долям: k = 0 даёт первый, k = 1 второй. Вынесено ради теста. */
+export function smeshat(a: number, b: number, k: number): number {
+  const d = Math.max(0, Math.min(1, k));
+  const sm = (sdvig: number) => {
+    const ka = (a >> sdvig) & 0xff;
+    const kb = (b >> sdvig) & 0xff;
+    return Math.round(ka + (kb - ka) * d) << sdvig;
+  };
+  return sm(16) | sm(8) | sm(0);
+}
+
 const TSVET_MATERIALA: Record<string, number> = {
   bazalt: 0x4a3a34,
   lyod: 0x8fb3c9,
@@ -88,6 +110,9 @@ export class Stsena {
     vragi: Vrag[] = [],
     boss: TroynoyKotyol | Kriostat | null = null,
     prizrak: Telo | null = null,
+    // доли жара по каждому телу игрока и признак того, что пара слита и греется
+    zharTel: number[] = [],
+    slito = false,
   ): void {
     const g = this.g;
     g.clear();
@@ -647,7 +672,14 @@ export class Stsena {
       g.stroke({ width: 2, color: 0xffd9a0, alpha: 0.5 });
     }
     // тела: контур по частицам, материал по состоянию, свечение, глаза
-    for (const t of tela) this.risovatTelo(t, alpha);
+    for (let i = 0; i < tela.length; i++)
+      this.risovatTelo(
+        tela[i] as Telo,
+        alpha,
+        zharTel[i] ?? 1,
+        i === 1, // вторая половина: иной оттенок, чтобы игроки различали себя
+        slito && zharTel.length > 1,
+      );
   }
 
   // Статический слой уровня: перестраивается при смене уровня или разрушении многоугольника
@@ -729,12 +761,23 @@ export class Stsena {
     }
   }
 
-  private risovatTelo(t: Telo, alpha: number): void {
+  /**
+   * Признаки состояния в кооперативе. Продакт посмотрел игру глазами и нашёл, что тела игроков
+   * неотличимы, а жар падает без единого признака на экране: за 12 секунд врозь с 98 до 79.
+   * Плейтест в таком виде измерил бы непонимание, а не веселье.
+   */
+  private risovatTelo(
+    t: Telo,
+    alpha: number,
+    dolyaZhara = 1,
+    vtoraya = false,
+    obogrev = false,
+  ): void {
     const g = this.g;
     const m = t.mir;
     const sost = t.sostoyanie;
     // цвета состояний из 01-koncepciya: обычное, вязкость, расплав, корка, выброс
-    const zalivka =
+    const zalivkaSost =
       sost === 'korka'
         ? 0x6e5a4e
         : sost === 'rasplav'
@@ -744,7 +787,17 @@ export class Stsena {
             : sost === 'vybros'
               ? 0xffb347
               : 0xe8642c;
-    const svet = sost === 'korka' ? 0xff6a1a : 0xffa54d;
+    // Холод: чем меньше жара, тем ближе тело к стылому цвету. Начинается не сразу, иначе
+    // игрок видит тревогу там, где её нет.
+    const holod = Math.max(0, (KOOP.poragHoloda - dolyaZhara) / KOOP.poragHoloda);
+    const zalivka = smeshat(zalivkaSost, KOOP.holod, holod * KOOP.silaHoloda);
+    // Вторая половина чуть иного оттенка: иначе в кооперативе не понять, кто ты
+    const zalivka2 = vtoraya ? smeshat(zalivka, KOOP.vtoraya, KOOP.silaVtoroy) : zalivka;
+    const svet = obogrev
+      ? KOOP.obogrev
+      : sost === 'korka'
+        ? 0xff6a1a
+        : smeshat(0xffa54d, KOOP.holod, holod * KOOP.silaHoloda);
     const px: number[] = this.bufX,
       py: number[] = this.bufY;
     let cx = 0,
@@ -760,8 +813,8 @@ export class Stsena {
     }
     cx /= t.n;
     cy /= t.n;
-    // свечение: увеличенный контур с прозрачностью
-    const r = sost === 'korka' ? 1.08 : 1.22;
+    // свечение: увеличенный контур с прозрачностью; слитая пара греется и светится сильнее
+    const r = obogrev ? KOOP.obogrevRadius : sost === 'korka' ? 1.08 : 1.22;
     for (let i = 0; i < t.n; i++) {
       const x = cx + ((px[i] as number) - cx) * r,
         y = cy + ((py[i] as number) - cy) * r;
@@ -769,14 +822,14 @@ export class Stsena {
       else g.lineTo(x, y);
     }
     g.closePath();
-    g.fill({ color: svet, alpha: sost === 'korka' ? 0.12 : 0.22 });
+    g.fill({ color: svet, alpha: obogrev ? 0.32 : sost === 'korka' ? 0.12 : 0.22 });
     // тело
     for (let i = 0; i < t.n; i++) {
       if (i === 0) g.moveTo(px[i] as number, py[i] as number);
       else g.lineTo(px[i] as number, py[i] as number);
     }
     g.closePath();
-    g.fill({ color: zalivka });
+    g.fill({ color: zalivka2 });
     g.stroke({ width: 2, color: sost === 'korka' ? 0xff8a3a : 0xffd9a0, alpha: 0.7 });
     // трещины корки: светящиеся линии от центра к частям контура
     if (sost === 'korka' || sost === 'vybros') {
