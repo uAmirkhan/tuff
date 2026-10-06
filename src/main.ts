@@ -58,7 +58,11 @@ let telo: Telo;
 // а как её выбирать игроку — решается вместе с дизайном.
 // Кооп включается меню или адресом ?koop=1. Выбор из меню переживает перезагрузку: он лежит
 // в настройках прогресса. Адрес имеет приоритет — им удобно открывать кооп, не трогая настройку.
-let koop = params.get('koop') === '1';
+//
+// Сохранённый выбор поднимается ЗДЕСЬ, до первого запуска уровня. Раньше он читался ниже, уже
+// после него: после перезагрузки кнопка и подсказка говорили «вдвоём», второго тела не было, а
+// стрелки были отданы второму игроку и потому мертвы.
+let koop = params.get('koop') === '1' || progress.nastroyki.koop;
 // Пробы руками, включаются адресом. Умолчание не меняется до слова Khan: обе правки меняют
 // ощущение игры, а оно на бумаге не решается.
 //   ?sliyanie=knopka — слияние переключателем, а не удержанием двух кнопок
@@ -340,8 +344,6 @@ const vvod = new Vvod(document.body);
 vvod.koop = koop;
 
 vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
-if (!koop && progress.nastroyki.koop) koop = true; // выбор из меню, сохранённый в прошлый раз
-vvod.koop = koop;
 
 // Кнопка выбора режима в меню уровней: раньше кооп включался только адресом, и живая пара
 // так за игру не села бы.
@@ -356,8 +358,10 @@ knopkaKoopa.addEventListener('click', () => {
   zapustitUroven(tekushchiy); // режим меняет состав тел, поэтому уровень начинается заново
   skrytMenyu();
 });
+// Подпись по ДЕЙСТВИЮ, а не по состоянию: в одиночной игре на кнопке «Играть вдвоём».
+// С подписью по состоянию пара, ищущая кооператив, слова «вдвоём» на экране не видела вовсе.
 function obnovitKnopkuKoopa(): void {
-  knopkaKoopa.textContent = t(yazyk, koop ? 'igratVdvoyom' : 'igratOdin');
+  knopkaKoopa.textContent = t(yazyk, koop ? 'igratOdin' : 'igratVdvoyom');
 }
 obnovitKnopkuKoopa();
 menyuZakryt.parentElement?.insertBefore(knopkaKoopa, menyuZakryt);
@@ -680,6 +684,7 @@ async function start(): Promise<void> {
       tela: (telo2 ? [telo, telo2] : [telo]).map((t) => ({ x: t.cx, y: t.cy, sost: t.sostoyanie })),
       rasstoyanie: telo2 ? Math.hypot(telo.cx - telo2.cx, telo.cy - telo2.cy) : 0,
       slito: igra?.slito ?? false,
+      natyazhenie: igra?.natyazhenie ?? 0,
       svyazey: igra?.sliyanie?.svyazey ?? 0,
     };
   });

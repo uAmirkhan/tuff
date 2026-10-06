@@ -1,5 +1,9 @@
 // Снимки признаков состояния в кооперативе: тёплые и различимые, остывшие врозь, греющиеся слитыми.
-import { chromium } from '../../mars-colony/node_modules/playwright/index.mjs';
+// Рецепт живого прогона, найденный приёмкой витка 009 (до неё он не поднимался вовсе):
+//   сервер:  npx vite --host 127.0.0.1 --port 5180 --strictPort
+//            ключ --host 127.0.0.1 обязателен: npm run dev слушает 0.0.0.0, и соединение не встаёт
+//   браузер: путь к playwright только схемой file:///, относительный путь не резолвится
+import { chromium } from 'file:///C:/Ai/Jarvis/mars-colony/node_modules/playwright/index.mjs';
 
 // --no-proxy-server: на машине Khan'а работает системный прокси, и без этого браузер
 // уводит даже localhost, отдавая ERR_CONNECTION_REFUSED на живой дев-сервер

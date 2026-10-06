@@ -54,6 +54,7 @@ export class Stsena {
   readonly znachki: { x: number; y: number; tekst: string }[] = [];
   kamX = 0;
   kamY = 2;
+  private kadr = 0; // счётчик кадров для дрожи натяжения
 
   async init(): Promise<void> {
     await this.app.init({ background: '#1a1418', resizeTo: window, antialias: true });
@@ -684,6 +685,23 @@ export class Stsena {
         slito && zharTel.length > 1,
         natyazhenie,
       );
+    // Натяжение: связь между половинами. Отдельный канал, не спорящий ни с холодом (цвет тела),
+    // ни с обогревом (размер свечения), ни с Коркой (маленькое свечение). Свечением тревогу
+    // передать не вышло: кадр показал, что красный по тёмно-красному фону читается как
+    // потемнение, а не как сигнал.
+    if (natyazhenie > 0 && tela.length > 1) {
+      const pervoe = tela[0] as Telo;
+      const vtoroe = tela[1] as Telo;
+      pervoe.schitatCentr();
+      vtoroe.schitatCentr();
+      g.moveTo(this.ekX(pervoe.cx), this.ekY(pervoe.cy));
+      g.lineTo(this.ekX(vtoroe.cx), this.ekY(vtoroe.cy));
+      g.stroke({
+        width: 1 + natyazhenie * 5,
+        color: KOOP.natyazhenie,
+        alpha: 0.35 + natyazhenie * 0.65,
+      });
+    }
   }
 
   // Статический слой уровня: перестраивается при смене уровня или разрушении многоугольника
@@ -803,9 +821,13 @@ export class Stsena {
       : sost === 'korka'
         ? 0xff6a1a
         : smeshat(0xffa54d, KOOP.holod, holod * KOOP.silaHoloda);
-    // Натяжение: пара расцеплялась молча, игрок не понимал, что происходит. Теперь связь
-    // наливается тревожным цветом и свечение поджимается — видно, что вот-вот разойдутся.
-    const svet = smeshat(svetBez, KOOP.natyazhenie, natyazhenie);
+    // Свечением тревогу передать не вышло: кадр показал, что красный по тёмно-красному фону
+    // читается как потемнение, а не как сигнал. Натяжение рисуется отдельным каналом — самой
+    // связью между половинами, ниже по коду. Здесь свечение остаётся как есть.
+    const svet = svetBez;
+    // дрожь: знакопеременная по кадрам, амплитуда растёт с натяжением
+    this.kadr++;
+    const drozh = natyazhenie * 4 * (this.kadr % 2 === 0 ? 1 : -1);
     const px: number[] = this.bufX,
       py: number[] = this.bufY;
     let cx = 0,
@@ -814,8 +836,11 @@ export class Stsena {
       const p = t.ot + i;
       const x = (m.px[p] as number) + ((m.x[p] as number) - (m.px[p] as number)) * alpha;
       const y = (m.py[p] as number) + ((m.y[p] as number) - (m.py[p] as number)) * alpha;
-      px[i] = this.ekX(x);
-      py[i] = this.ekY(y);
+      // Дрожь от натяжения: читается независимо от размера пары и не спорит ни с холодом
+      // (цвет тела), ни с обогревом (размер свечения), ни с Коркой. Цветом тревогу передать
+      // не вышло — кадр показал, что красный по тёмно-красному фону читается как потемнение.
+      px[i] = this.ekX(x) + drozh;
+      py[i] = this.ekY(y) - drozh;
       cx += px[i] as number;
       cy += py[i] as number;
     }
