@@ -156,6 +156,11 @@ export class Zvuk {
         case 'uronOtVraga':
           if (this.sluchay() < 0.15) this.shipenie(0.1, 2500, 0.12);
           break;
+        case 'rascepilis':
+          // короткий рвущийся звук: пара разошлась не по своей воле
+          this.ton(300, 0.18, 'sawtooth', 0.18, 0.5);
+          this.shipenie(0.22, 1200, 0.14);
+          break;
         case 'slomano':
           this.ton(70, 0.3, 'square', 0.25, 0.4);
           this.shipenie(0.3, 500, 0.2, 'lowpass');

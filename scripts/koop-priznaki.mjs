@@ -9,7 +9,7 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
 page.on('pageerror', (e) => console.log('[error]', e.message));
 const PORT = process.argv[2] ?? 5180;
-await page.goto(`http://localhost:${PORT}/?uroven=k1-1&koop=1&chisto=1`);
+await page.goto(`http://127.0.0.1:${PORT}/?uroven=k1-1&koop=1&chisto=1`);
 await page.waitForTimeout(2200);
 
 const sost = () =>

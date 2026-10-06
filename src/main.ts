@@ -107,11 +107,21 @@ function pokazatKonec(): void {
   const bylo = progress.urovni[tekushchiy.id]?.luchsheeVremya ?? 0;
   // третья звезда там, где есть цель по времени: ствол без длинного падения; погоня и босс с камнями
   // и жаром не ниже половины, у босса вместо жара годится запасной путь
+  // Третья звезда: НИ ОДНО тело игрока не опускалось ниже половины жара. В соло это ровно
+  // прежнее условие (жизнь одна, героя), в кооперативе оно распространяется на напарника.
+  //
+  // Почему минимум за уровень, а не жар на выходе: жар на выходе покупается смертью — она
+  // возвращает жар в максимум, и пара, едва доползшая холодной, получала бы звезду, умерев
+  // перед дверью. Минимум смерть не стирает.
+  //
+  // В кооперативе это значит «сливались достаточно часто, чтобы не остыть»: обогрев слитыми
+  // единственное, что возвращает жар. Пара, которая шла рядом, но ни разу не слилась, за
+  // полторы минуты опускается ниже половины и звезду теряет.
+  const zharOk = igra.zhizni.every((z) => z.minZhar >= ZHAR.maks / 2);
   const tretya = zherlo
     ? igra.dlinneysheePadenie < 3
     : serdca.every(Boolean) &&
-      (igra.minZhar >= ZHAR.maks / 2 ||
-        (igra.boss instanceof Kriostat && igra.boss.treshchin >= KRIOSTAT.treshchinNaBak));
+      (zharOk || (igra.boss instanceof Kriostat && igra.boss.treshchin >= KRIOSTAT.treshchinNaBak));
   const rez = zapisatRezultat(progress, tekushchiy.id, {
     takty: igra.takty,
     ochki: igra.ochki,
@@ -554,6 +564,7 @@ async function start(): Promise<void> {
       prizrak && !prizrak.zakonchen ? prizrak.telo : null,
       (igra?.zhizni ?? []).map((z) => z.zhar / ZHAR.maks),
       igra?.slito ?? false,
+      igra?.natyazhenie ?? 0,
     );
     risovatUi();
     // подписи значков обучения

@@ -19,6 +19,7 @@ const KOOP = {
   obogrevRadius: 1.45,
   vtoraya: 0xd94f7a, // оттенок второй половины
   silaVtoroy: 0.22,
+  natyazhenie: 0xff3b2f, // тревожный цвет связи перед расцеплением
 } as const;
 
 /** Смешать два цвета по долям: k = 0 даёт первый, k = 1 второй. Вынесено ради теста. */
@@ -113,6 +114,8 @@ export class Stsena {
     // доли жара по каждому телу игрока и признак того, что пара слита и греется
     zharTel: number[] = [],
     slito = false,
+    // насколько пара близка к расцеплению: 0 согласие, 1 вот-вот разойдутся
+    natyazhenie = 0,
   ): void {
     const g = this.g;
     g.clear();
@@ -679,6 +682,7 @@ export class Stsena {
         zharTel[i] ?? 1,
         i === 1, // вторая половина: иной оттенок, чтобы игроки различали себя
         slito && zharTel.length > 1,
+        natyazhenie,
       );
   }
 
@@ -772,6 +776,7 @@ export class Stsena {
     dolyaZhara = 1,
     vtoraya = false,
     obogrev = false,
+    natyazhenie = 0,
   ): void {
     const g = this.g;
     const m = t.mir;
@@ -793,11 +798,14 @@ export class Stsena {
     const zalivka = smeshat(zalivkaSost, KOOP.holod, holod * KOOP.silaHoloda);
     // Вторая половина чуть иного оттенка: иначе в кооперативе не понять, кто ты
     const zalivka2 = vtoraya ? smeshat(zalivka, KOOP.vtoraya, KOOP.silaVtoroy) : zalivka;
-    const svet = obogrev
+    const svetBez = obogrev
       ? KOOP.obogrev
       : sost === 'korka'
         ? 0xff6a1a
         : smeshat(0xffa54d, KOOP.holod, holod * KOOP.silaHoloda);
+    // Натяжение: пара расцеплялась молча, игрок не понимал, что происходит. Теперь связь
+    // наливается тревожным цветом и свечение поджимается — видно, что вот-вот разойдутся.
+    const svet = smeshat(svetBez, KOOP.natyazhenie, natyazhenie);
     const px: number[] = this.bufX,
       py: number[] = this.bufY;
     let cx = 0,
@@ -814,6 +822,10 @@ export class Stsena {
     cx /= t.n;
     cy /= t.n;
     // свечение: увеличенный контур с прозрачностью; слитая пара греется и светится сильнее
+    // Свечение НЕ сжимается при натяжении: замер кадров показал, что кольцо ужимается со 100%
+    // площади до 6%, тревожный цвет наливается в то, чего почти не осталось, и читается это как
+    // «гаснет», а не «тревога». Плюс маленькое свечение уже занято Коркой — два смысла на одном
+    // признаке. Тревога идёт цветом и яркостью, размер остаётся.
     const r = obogrev ? KOOP.obogrevRadius : sost === 'korka' ? 1.08 : 1.22;
     for (let i = 0; i < t.n; i++) {
       const x = cx + ((px[i] as number) - cx) * r,
@@ -822,7 +834,8 @@ export class Stsena {
       else g.lineTo(x, y);
     }
     g.closePath();
-    g.fill({ color: svet, alpha: obogrev ? 0.32 : sost === 'korka' ? 0.12 : 0.22 });
+    const alphaSveta = obogrev ? 0.32 : sost === 'korka' ? 0.12 : 0.22;
+    g.fill({ color: svet, alpha: alphaSveta + natyazhenie * 0.3 });
     // тело
     for (let i = 0; i < t.n; i++) {
       if (i === 0) g.moveTo(px[i] as number, py[i] as number);

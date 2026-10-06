@@ -3,6 +3,7 @@
 // Замеры, из которых взяты числа: wiki 16-koop-dizayn, раздел 4.5.
 import { describe, expect, it } from 'vitest';
 import { MIR } from '../src/game/config/telo';
+import { ZHAR } from '../src/game/config/zhar';
 import { Igra } from '../src/game/igra';
 import { type Namerenie, PUSTOE, Telo } from '../src/game/telo';
 import type { Obekt, Uroven } from '../src/level/format';
@@ -380,5 +381,57 @@ describe('кооп: остывание по расстоянию и обогре
     const vrozn = 100 - zharCherez(600, 3, 28).igra.zhar; // дальше 20
     expect(srednee).toBeGreaterThan(ryadom * 1.5);
     expect(vrozn).toBeGreaterThan(srednee * 1.5);
+  });
+});
+
+describe('кооп: третья звезда и натяжение перед расцеплением', () => {
+  const VYHOD: Obekt[] = [{ tip: 'vyhod', id: 'v', x: 14, y: 0.5 }];
+
+  // Третья звезда считается по минимуму жара у КАЖДОГО тела. Жар на выходе для этого не
+  // годится: смерть возвращает жар в максимум, и звезду можно было бы купить, умерев перед
+  // дверью. Минимум смерть не стирает — это и проверяется.
+  it('минимум жара ведётся на каждое тело и смертью не стирается', () => {
+    // выход далеко: рядом с ним уровень закрывается и такт выходит раньше, чем считает минимум
+    const s = stsena([{ tip: 'vyhod', id: 'v', x: 29, y: 0.5 }], 10, 0.6, 10.9, 0.6);
+    for (let t = 0; t < 10; t++) s.shag();
+    for (const zh of s.igra.zhizni) zh.zhar = 20; // просадили оба
+    s.shag();
+    expect(s.igra.zhizni.every((z) => z.minZhar <= 20)).toBe(true);
+    s.igra.umeret('проба'); // смерть возвращает жар, но не минимум
+    expect(s.igra.zhar).toBe(ZHAR.maks);
+    expect(s.igra.zhizni.every((z) => z.minZhar <= 20)).toBe(true);
+  });
+
+  it('в соло минимум ведётся ровно как раньше', () => {
+    const s = stsena(VYHOD, 14, 0.6);
+    for (let t = 0; t < 10; t++) s.shag();
+    expect(s.igra.zhizni.length).toBe(1);
+    expect(s.igra.zhizni[0]?.minZhar).toBe(s.igra.minZhar);
+  });
+
+  it('натяжение растёт при встречном вводе и падает при согласии', () => {
+    const s = stsena([{ tip: 'vyhod', id: 'v', x: 29, y: 0.5 }], 10, 0.6, 10.9, 0.6);
+    for (let t = 0; t < 20; t++) s.shag();
+    expect(s.igra.slit()).toBe(true);
+    expect(s.igra.natyazhenie).toBe(0);
+    for (let t = 0; t < 15; t++) s.shag({ dx: 1 }, { dx: -1 });
+    const naPolputi = s.igra.natyazhenie;
+    expect(naPolputi).toBeGreaterThan(0.3);
+    expect(naPolputi).toBeLessThan(1);
+    // согласие СПАДАЕТ натяжение, а не обнуляет рывком: иначе, чередуя 25 тактов встречного
+    // ввода и один согласный, расцепиться было нельзя никогда, а свечение прыгало через кадр
+    s.shag({ dx: 1 }, { dx: 1 });
+    expect(s.igra.natyazhenie).toBeLessThan(naPolputi);
+    for (let t = 0; t < 30; t++) s.shag({ dx: 1 }, { dx: 1 });
+    expect(s.igra.natyazhenie).toBe(0); // до нуля доходит, просто не рывком
+  });
+
+  it('разошлись — натяжения больше нет', () => {
+    const s = stsena([{ tip: 'vyhod', id: 'v', x: 29, y: 0.5 }], 10, 0.6, 10.9, 0.6);
+    for (let t = 0; t < 20; t++) s.shag();
+    expect(s.igra.slit()).toBe(true);
+    for (let t = 0; t < 60 && s.igra.slito; t++) s.shag({ dx: 1 }, { dx: -1 });
+    expect(s.igra.slito).toBe(false);
+    expect(s.igra.natyazhenie).toBe(0);
   });
 });

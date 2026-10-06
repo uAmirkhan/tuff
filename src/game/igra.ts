@@ -42,6 +42,11 @@ export interface Zhizn {
   readonly telo: Telo;
   nam: Namerenie;
   zhar: number;
+  /**
+   * Наименьший жар этого тела за уровень. Смерть возвращает жар в максимум, но минимум уже
+   * записан — иначе третью звезду можно было бы купить смертью перед выходом.
+   */
+  minZhar: number;
   korkaDo: number;
   korkaSredy: boolean;
   prichinaUrona: string;
@@ -109,6 +114,7 @@ export class Igra {
       telo,
       nam: PUSTOE,
       zhar: ZHAR.maks,
+      minZhar: ZHAR.maks,
       korkaDo: 0,
       korkaSredy: false,
       prichinaUrona: 'холод',
@@ -129,6 +135,14 @@ export class Igra {
   private vstrechnyhTaktov = 0;
 
   /**
+   * Насколько пара близка к расцеплению: 0 — согласие, 1 — вот-вот разойдутся.
+   * Пара расцеплялась молча, и игрок не понимал, что происходит, пока не разошлись.
+   */
+  get natyazhenie(): number {
+    return this.slito ? Math.min(1, this.vstrechnyhTaktov / SLIYANIE.rascepTaktov) : 0;
+  }
+
+  /**
    * Лекарство от заморозки. До него слитая пара от встречного ввода вставала намертво
    * (ход падал до 0% от «оба жмут в одну сторону»), и партнёр останавливал игрока одной
    * клавишей — прямое нарушение правила «гриферство невозможно».
@@ -141,11 +155,14 @@ export class Igra {
     const vstrechno = namSputnikov.some(
       (n) => nam.dx !== 0 && n.dx !== 0 && Math.sign(nam.dx) !== Math.sign(n.dx),
     );
-    this.vstrechnyhTaktov = vstrechno ? this.vstrechnyhTaktov + 1 : 0;
+    // спад, а не сброс: чередуя 25 тактов встречного ввода и один согласный, расцепиться
+    // было нельзя никогда, и свечение прыгало через кадр вместо плавного спада
+    this.vstrechnyhTaktov = vstrechno
+      ? this.vstrechnyhTaktov + 1
+      : Math.max(0, this.vstrechnyhTaktov - 1);
     if (this.vstrechnyhTaktov >= SLIYANIE.rascepTaktov) {
-      this.razdelit();
+      this.razdelit(); // событие объявит сам razdelit
       this.vstrechnyhTaktov = 0;
-      this.sobytiya.push({ tip: 'rascepilis' });
     }
   }
 
@@ -155,7 +172,11 @@ export class Igra {
   }
 
   razdelit(): void {
+    // объявляем всегда, а не только при встречном вводе: от отпускания кнопок и от смерти пара
+    // расходилась так же молча, на что и жаловались
+    const bylo = this.slito;
     this.sliyanie?.razdelit();
+    if (bylo) this.sobytiya.push({ tip: 'rascepilis' });
   }
 
   get slito(): boolean {
@@ -637,6 +658,7 @@ export class Igra {
       if (t.cy < gr.minY - 2 || t.cx < gr.minX - 5 || t.cx > gr.maxX + 5)
         this.umeretTelo(zh, 'падение');
     }
+    for (const zh of this.zhizni) if (zh.zhar < zh.minZhar) zh.minZhar = zh.zhar;
     if (this.zhar < this.minZhar) this.minZhar = this.zhar;
     for (const zh of this.zhizni) if (zh.zhar <= 0) this.umeretTelo(zh, zh.prichinaUrona);
     // сторожа тела: взрыв, выворачивание, самопересечение; событие в журнал и в события такта
