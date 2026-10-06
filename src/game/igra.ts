@@ -10,10 +10,9 @@ import { SLIYANIE, Sliyanie } from './sliyanie';
 const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
 // множители силы потока по материалу героя: Расплав парусит, Корка почти не летит
-const POTOK = { rasplav: 1.8, korka: 0.15, konteyner: 0.6 };
-const UZEL = { takty: 180, radius: 1.5, radiusVstrechi: 3 }; // узел: 3 секунды Вязкости в полутора диаметрах; встреча с баком в 3
 
 import { OSTYVANIE, ZHAR } from './config/zhar';
+import { POTOK, UZEL } from './config/zony';
 import { type Namerenie, PUSTOE, type Telo } from './telo';
 import { Vrag } from './vrag';
 
