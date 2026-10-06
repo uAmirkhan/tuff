@@ -209,12 +209,17 @@ describe('кооп: среда и жар у каждого тела свои', (
     { tip: 'vyhod', id: 'v', x: 27, y: 0.5 },
   ];
 
-  it('спутник в шипах теряет свой жар, у героя жар цел', () => {
+  // Герой тоже теряет жар, но только от остывания по расстоянию, а не от чужих шипов.
+  // Закрепляется СРАВНЕНИЕМ с той же сценой без шипов: порог вида «больше 97» проходил бы и
+  // при другой скорости остывания и ничего бы не доказывал.
+  it('спутник в шипах теряет свой жар, герой — ровно столько же, сколько без шипов', () => {
+    const bez = stsena([{ tip: 'vyhod', id: 'v', x: 29, y: 0.5 }], 3, 0.6, 14, 0.6);
+    for (let t = 0; t < 60; t++) bez.shag();
     const s = stsena(SHIPY, 3, 0.6, 14, 0.6);
     for (let t = 0; t < 60; t++) s.shag();
-    expect(s.igra.zhar).toBe(100);
     const zhB = s.igra.zhizni[1]?.zhar as number;
-    expect(zhB).toBeLessThan(100);
+    expect(s.igra.zhar).toBeCloseTo(bez.igra.zhar, 3); // шипы спутника героя не задели вовсе
+    expect(zhB).toBeLessThan(s.igra.zhar - 5); // а самого спутника задели заметно
     expect(zhB).toBeGreaterThan(0);
   });
 
@@ -249,7 +254,7 @@ describe('кооп: среда и жар у каждого тела свои', (
       for (const e of s.igra.sobytiya) if (e.tip === 'smert') smertey++;
     }
     expect(smertey).toBeGreaterThan(0);
-    expect(s.igra.zhar).toBe(100);
+    expect(s.igra.zhar).toBeGreaterThan(80); // герой жив: теряет только на остывании
     expect((s.b as Telo).cx).toBeLessThan(5); // вернулся к старту, а не остался в шипах на 14
   });
 
@@ -322,5 +327,58 @@ describe('кооп: ворота «нажаты обе» и правило ва�
     expect(oshibki.some((o) => o.includes('одно тело держит обе'))).toBe(true);
 
     expect(proveritUroven(komnata(VOROTA_I))).toEqual([]);
+  });
+});
+
+describe('кооп: остывание по расстоянию и обогрев слиянием', () => {
+  // Цена разделения, выраженная физикой: половина меньше целого и порознь стынет быстрее.
+  // Без неё ярус 1 не даёт паре причины сливаться, и главный крючок игры остаётся непроверенным.
+  const PUSTO: Obekt[] = [{ tip: 'vyhod', id: 'v', x: 29, y: 0.5 }];
+
+  function zharCherez(taktov: number, ax: number, bx: number | null, slivat = false) {
+    const s = bx === null ? stsena(PUSTO, ax, 0.6) : stsena(PUSTO, ax, 0.6, bx, 0.6);
+    if (slivat) {
+      for (let t = 0; t < 20; t++) s.shag();
+      expect(s.igra.slit()).toBe(true);
+    }
+    for (let t = 0; t < taktov; t++) s.shag();
+    return s;
+  }
+
+  it('соло не меняется: одиночка не стынет вовсе', () => {
+    expect(zharCherez(600, 10, null).igra.zhar).toBe(100);
+  });
+
+  it('рядом стынут медленно, врозь быстро', () => {
+    const ryadom = zharCherez(600, 10, 11).igra.zhar;
+    const vrozn = zharCherez(600, 3, 25).igra.zhar;
+    expect(ryadom).toBeLessThan(100); // рядом всё равно стынут, но медленно
+    expect(ryadom).toBeGreaterThan(90);
+    expect(vrozn).toBeLessThan(ryadom - 15); // врозь заметно быстрее
+    expect(vrozn).toBeGreaterThan(0);
+  });
+
+  it('слитые не стынут, а восстанавливаются', () => {
+    const s = zharCherez(0, 10, 10.9, true);
+    for (const zh of s.igra.zhizni) zh.zhar = 50; // просадили жар, чтобы обогрев было видно
+    for (let t = 0; t < 300; t++) s.shag();
+    expect(s.igra.slito).toBe(true);
+    expect(s.igra.zhar).toBeGreaterThan(55);
+    expect(s.igra.zhizni[1]?.zhar as number).toBeGreaterThan(55);
+  });
+
+  it('обогрев не переливает через предел', () => {
+    const s = zharCherez(600, 10, 10.9, true);
+    expect(s.igra.zhar).toBe(100);
+  });
+
+  // Средняя полоса (между порогами) своего теста не имела: её держал только порог «больше 97»
+  // в проверке про шипы, который проходит и при скорости «рядом». Закрепляем отдельно.
+  it('три полосы расстояния дают три разные скорости', () => {
+    const ryadom = 100 - zharCherez(600, 10, 11).igra.zhar;
+    const srednee = 100 - zharCherez(600, 10, 22).igra.zhar; // между порогами 8 и 20
+    const vrozn = 100 - zharCherez(600, 3, 28).igra.zhar; // дальше 20
+    expect(srednee).toBeGreaterThan(ryadom * 1.5);
+    expect(vrozn).toBeGreaterThan(srednee * 1.5);
   });
 });

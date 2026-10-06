@@ -13,7 +13,7 @@ const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая в
 const POTOK = { rasplav: 1.8, korka: 0.15, konteyner: 0.6 };
 const UZEL = { takty: 180, radius: 1.5, radiusVstrechi: 3 }; // узел: 3 секунды Вязкости в полутора диаметрах; встреча с баком в 3
 
-import { ZHAR } from './config/zhar';
+import { OSTYVANIE, ZHAR } from './config/zhar';
 import { type Namerenie, PUSTOE, type Telo } from './telo';
 import { Vrag } from './vrag';
 
@@ -250,6 +250,31 @@ export class Igra {
     }
   }
 
+  /**
+   * Остывание по расстоянию и обогрев слиянием. Работает только в кооперативе: в соло список
+   * спутников пуст, и жар ведёт себя ровно как раньше.
+   *
+   * Это цена разделения, выраженная физикой, а не выдуманным штрафом: держит игроков рядом
+   * смыслом, не запрещая расходиться, и даёт слиянию вторую пользу помимо силы.
+   */
+  private ostyvanie(): void {
+    if (!this.sputniki.length) return;
+    let dalshe = 0;
+    for (const t of this.sputniki) {
+      t.schitatCentr();
+      dalshe = Math.max(dalshe, Math.hypot(this.telo.cx - t.cx, this.telo.cy - t.cy));
+    }
+    const shag = this.slito
+      ? OSTYVANIE.obogrev
+      : dalshe <= OSTYVANIE.blizko
+        ? -OSTYVANIE.ryadom
+        : dalshe <= OSTYVANIE.daleko
+          ? -OSTYVANIE.srednee
+          : -OSTYVANIE.vrozn;
+    for (const zh of this.zhizni) zh.zhar = Math.min(ZHAR.maks, zh.zhar + shag);
+    if (shag < 0) for (const zh of this.zhizni) zh.prichinaUrona = 'холод';
+  }
+
   /** Лава, шипы, вода и иней для одного тела. Заряд инея считается отдельно у каждого. */
   private sreda(zh: Zhizn, g: Gabarity): void {
     let vLave = false,
@@ -364,6 +389,9 @@ export class Igra {
     this.dvigatPorshni();
     this.raspisanieZon();
     this.podnyatVodu();
+    // Остывание раньше среды: иначе лава лечит до предела, а остывание тут же срезает сверху,
+    // и «лава лечит» перестаёт быть правдой
+    this.ostyvanie();
     // Среда: у каждого тела игрока свой жар и своя принудительная Корка
     for (const zh of this.zhizni) this.sreda(zh, zh.telo === this.telo ? g : zh.telo.gabarity());
     // Собираемое, горны, выход: по расстоянию до центра.
