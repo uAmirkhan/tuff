@@ -18,6 +18,7 @@ import { UROVEN_KOOP_1 } from './urovni/koop-1';
 import { UROVEN_KOOP_2 } from './urovni/koop-2';
 import { UROVEN_PROBA } from './urovni/proba-elementov';
 import { UROVEN_STVOL_1 } from './urovni/stvol-1';
+import { UROVEN_VOROTA_VYSOTY } from './urovni/vorota-vysoty';
 import { UROVEN_ZH_1 } from './urovni/zherlo-1';
 
 // Кампания: ярус 1 «Криоблок» (семь уровней) и бонус «Ствол» (открывается звёздами яруса)
@@ -38,6 +39,7 @@ export const ISPYTATELNYE: Uroven[] = [
   UROVEN_PROBA,
   UROVEN_KOOP_1,
   UROVEN_KOOP_2,
+  UROVEN_VOROTA_VYSOTY,
   UROVEN_1_1,
   UROVEN_1_2,
   UROVEN_1_3,
