@@ -5,7 +5,7 @@ import { TroynoyKotyol } from './boss';
 import { MIR } from './config/telo';
 import { BOY, SEMEYSTVA, VODA_ZASTYVANIE, VRAGI } from './config/vragi';
 import { Kriostat } from './kriostat';
-import { Sliyanie } from './sliyanie';
+import { SLIYANIE, Sliyanie } from './sliyanie';
 
 const MIR_G = MIR.gravitatsiya;
 const VODA_SOPROTIVLENIE = 0.08; // доля скорости, гасимая водой за такт
@@ -32,7 +32,8 @@ export type Sobytie =
   | { tip: 'boss'; chto: string }
   | { tip: 'panel'; nomer: number }
   | { tip: 'uzel'; id: string }
-  | { tip: 'ruda'; id: string };
+  | { tip: 'ruda'; id: string }
+  | { tip: 'rascepilis' };
 
 type Gabarity = ReturnType<Telo['gabarity']>;
 
@@ -123,6 +124,29 @@ export class Igra {
     this.sputniki.push(t);
     this.zhizni.push(Igra.novayaZhizn(t));
     if (!this.sliyanie) this.sliyanie = new Sliyanie(this.mir, this.telo, t);
+  }
+
+  private vstrechnyhTaktov = 0;
+
+  /**
+   * Лекарство от заморозки. До него слитая пара от встречного ввода вставала намертво
+   * (ход падал до 0% от «оба жмут в одну сторону»), и партнёр останавливал игрока одной
+   * клавишей — прямое нарушение правила «гриферство невозможно».
+   */
+  private rascepitPriVstrechnom(nam: Namerenie, namSputnikov: Namerenie[]): void {
+    if (!this.slito) {
+      this.vstrechnyhTaktov = 0;
+      return;
+    }
+    const vstrechno = namSputnikov.some(
+      (n) => nam.dx !== 0 && n.dx !== 0 && Math.sign(nam.dx) !== Math.sign(n.dx),
+    );
+    this.vstrechnyhTaktov = vstrechno ? this.vstrechnyhTaktov + 1 : 0;
+    if (this.vstrechnyhTaktov >= SLIYANIE.rascepTaktov) {
+      this.razdelit();
+      this.vstrechnyhTaktov = 0;
+      this.sobytiya.push({ tip: 'rascepilis' });
+    }
   }
 
   /** Слить пару, если тела касаются. Возвращает, получилось ли. */
@@ -331,6 +355,8 @@ export class Igra {
     for (let i = 0; i < this.sputniki.length; i++)
       (this.zhizni[i + 1] as Zhizn).nam = namSputnikov[i] ?? PUSTOE;
     this.sobytiya.length = 0;
+    // строго после очистки: иначе объявление расцепления затирается этим же тактом
+    this.rascepitPriVstrechnom(nam, namSputnikov);
     this.telo.schitatCentr();
     const cx = this.telo.cx,
       cy = this.telo.cy;

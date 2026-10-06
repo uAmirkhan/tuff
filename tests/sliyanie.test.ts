@@ -238,12 +238,34 @@ describe('слияние: кто везёт слитую пару', () => {
     expect(odin / oba).toBeLessThan(0.5);
   });
 
-  // Обратная сторона сцепки: партнёр останавливает пару одной клавишей. Правило 7
-  // кооп-дизайна («griefing невозможен») этим нарушено, и это записано в вики.
-  it('встречный ввод замораживает слитую пару: это вектор для гриферства', () => {
+  // Раньше встречный ввод замораживал пару насмерть (0% хода), и партнёр останавливал
+  // игрока одной клавишей. Теперь полсекунды взаимного несогласия расцепляют пару:
+  // тянете в разные стороны — разошлись, а не встали.
+  it('встречный ввод расцепляет пару, а не замораживает', () => {
     const oba = put({ dx: 1 }, { dx: 1 }, true);
     const vrazrez = put({ dx: 1 }, { dx: -1 }, true);
-    expect(vrazrez / oba).toBeLessThan(0.05);
+    expect(vrazrez / oba).toBeGreaterThan(0.33);
+  });
+
+  it('расцепление происходит и объявляется событием', () => {
+    const s = stsena(uroven(POL), 6, 0.6, 6.9, 0.6);
+    for (let t = 0; t < 30; t++) s.shag();
+    expect(s.igra.slit()).toBe(true);
+    let obyavleno = false;
+    for (let t = 0; t < 120 && s.igra.slito; t++) {
+      s.shag({ dx: 1 }, { dx: -1 });
+      for (const e of s.igra.sobytiya) if (e.tip === 'rascepilis') obyavleno = true;
+    }
+    expect(s.igra.slito).toBe(false);
+    expect(obyavleno).toBe(true);
+  });
+
+  it('согласный ввод пару не расцепляет', () => {
+    const s = stsena(uroven(POL), 6, 0.6, 6.9, 0.6);
+    for (let t = 0; t < 30; t++) s.shag();
+    expect(s.igra.slit()).toBe(true);
+    for (let t = 0; t < 600; t++) s.shag({ dx: 1 }, { dx: 1 });
+    expect(s.igra.slito).toBe(true);
   });
 
   it('неслитые тела так не залипают: активный протаскивает пассивного вдвое медленнее', () => {

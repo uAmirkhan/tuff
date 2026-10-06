@@ -477,6 +477,10 @@ async function start(): Promise<void> {
       prizrak?.shag();
       igra?.doShaga();
       // Слияние: держат оба. Отпустил любой — разошлись.
+      //
+      // Флаг удержания намеренно НЕ сбрасывается, когда игра расцепила пару сама (встречный
+      // ввод). Иначе вышел бы цикл «расцепился — тут же слился — снова замёрз»: кнопки-то
+      // всё ещё нажаты. Чтобы слиться заново, надо отпустить и нажать снова.
       if (igra && telo2) {
         const hotyat = vvod.sliyanieNazhato(0) && vvod.sliyanieNazhato(1);
         if (hotyat && !slitiePodderzhano) igra.slit();
