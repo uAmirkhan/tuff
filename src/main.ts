@@ -56,7 +56,9 @@ let ur: ZagruzhennyyUroven | null = null;
 let telo: Telo;
 // Кооп включается адресом ?koop=1. Это заглушка до меню: игровая модель на двоих уже есть,
 // а как её выбирать игроку — решается вместе с дизайном.
-const koop = params.get('koop') === '1';
+// Кооп включается меню или адресом ?koop=1. Выбор из меню переживает перезагрузку: он лежит
+// в настройках прогресса. Адрес имеет приоритет — им удобно открывать кооп, не трогая настройку.
+let koop = params.get('koop') === '1';
 // Пробы руками, включаются адресом. Умолчание не меняется до слова Khan: обе правки меняют
 // ощущение игры, а оно на бумаге не решается.
 //   ?sliyanie=knopka — слияние переключателем, а не удержанием двух кнопок
@@ -338,6 +340,27 @@ const vvod = new Vvod(document.body);
 vvod.koop = koop;
 
 vvod.nastroyki.pomoshchnikKasaniya = progress.nastroyki.pomoshchnik;
+if (!koop && progress.nastroyki.koop) koop = true; // выбор из меню, сохранённый в прошлый раз
+vvod.koop = koop;
+
+// Кнопка выбора режима в меню уровней: раньше кооп включался только адресом, и живая пара
+// так за игру не села бы.
+const knopkaKoopa = document.createElement('button');
+knopkaKoopa.className = 'vtor';
+knopkaKoopa.addEventListener('click', () => {
+  koop = !koop;
+  progress.nastroyki.koop = koop;
+  sohranitProgress(hranilishche, progress);
+  vvod.koop = koop;
+  obnovitKnopkuKoopa();
+  zapustitUroven(tekushchiy); // режим меняет состав тел, поэтому уровень начинается заново
+  skrytMenyu();
+});
+function obnovitKnopkuKoopa(): void {
+  knopkaKoopa.textContent = t(yazyk, koop ? 'igratVdvoyom' : 'igratOdin');
+}
+obnovitKnopkuKoopa();
+menyuZakryt.parentElement?.insertBefore(knopkaKoopa, menyuZakryt);
 const stsena = new Stsena();
 const hud = document.getElementById('hud') as HTMLDivElement;
 const ui = new Graphics();

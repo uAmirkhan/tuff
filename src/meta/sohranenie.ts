@@ -18,7 +18,7 @@ export interface Progress {
   uzly: string[]; // зажжённые узлы теплотрассы по id уровня
   ruda: number; // жар-руда в кармане
   rudaNaydena: string[]; // клады «уровень:id», чтобы не считать дважды
-  nastroyki: { pomoshchnik: boolean; raskladka: 'wasd' | 'strelki'; zvuk: boolean };
+  nastroyki: { pomoshchnik: boolean; raskladka: 'wasd' | 'strelki'; zvuk: boolean; koop: boolean };
 }
 
 export interface Hranilishche {
@@ -33,7 +33,7 @@ export const PUSTOY_PROGRESS = (): Progress => ({
   uzly: [],
   ruda: 0,
   rudaNaydena: [],
-  nastroyki: { pomoshchnik: false, raskladka: 'wasd', zvuk: true },
+  nastroyki: { pomoshchnik: false, raskladka: 'wasd', zvuk: true, koop: false },
 });
 
 const KLYUCH = 'tuff-progress-v1';

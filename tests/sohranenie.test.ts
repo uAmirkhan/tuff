@@ -96,3 +96,32 @@ describe('сохранение прогресса', () => {
     expect(r4.zvezdy).toBe(3);
   });
 });
+
+describe('настройка кооператива', () => {
+  // Раньше кооп включался только адресом ?koop=1, и живая пара так за игру не села бы.
+  // Выбор из меню обязан пережить перезагрузку, иначе его придётся делать каждый раз.
+  it('выбор режима переживает перезагрузку', () => {
+    const h = new HranilishchePamyati();
+    const p = zagruzitProgress(h);
+    expect(p.nastroyki.koop).toBe(false); // по умолчанию игра одиночная
+    p.nastroyki.koop = true;
+    sohranitProgress(h, p);
+    expect(zagruzitProgress(h).nastroyki.koop).toBe(true);
+  });
+
+  it('старое сохранение без этой настройки не ломается', () => {
+    const h = new HranilishchePamyati();
+    // сохранение, сделанное до появления кооператива: поля koop в настройках нет вовсе
+    h.pisat(
+      JSON.stringify({
+        versiya: 1,
+        urovni: {},
+        nastroyki: { pomoshchnik: true, raskladka: 'wasd', zvuk: false },
+      }),
+    );
+    const p = zagruzitProgress(h);
+    expect(p.nastroyki.koop).toBe(false); // добирается из умолчаний
+    expect(p.nastroyki.pomoshchnik).toBe(true); // а прежние настройки уцелели
+    expect(p.nastroyki.zvuk).toBe(false);
+  });
+});
